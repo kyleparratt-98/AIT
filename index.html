@@ -1,761 +1,651 @@
 <!doctype html>
 <html lang="bg">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>CRV Trainer — Advanced Intuition (BG/EN)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .border-3{border-width:3px}
-    canvas.sketch{touch-action:none; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.15)}
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AIRV — Advanced Intelligence Remote Viewing</title>
+<style>
+  :root{
+    --bg:#0b0f0c; --panel:#0f1511; --line:#18201a; --term:#0a120d;
+    --green:#10e08a; --green-dim:#66f1bb; --amber:#ffc857; --red:#ff4d4d; --gray:#a2a9a6;
+    --txt:#e6fff3; --muted:#b7d6c9;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Code", "Fira Code", Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--txt);font:14px/1.4 var(--mono);
+  }
+  .container{max-width:1200px;margin:0 auto;padding:16px}
+  .grid{display:grid;gap:12px}
+  .g2{grid-template-columns: 1fr 1fr}
+  .g3{grid-template-columns: 1fr 1fr 1fr}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px}
+  .title{font-size:18px;margin:0 0 8px 0;color:var(--green)}
+  .btn{background:transparent;border:1px solid var(--green);color:var(--green);padding:8px 10px;border-radius:6px;cursor:pointer}
+  .btn:hover{background:rgba(16,224,138,0.08)}
+  .btn.red{border-color:var(--red);color:var(--red)}
+  .btn.amber{border-color:var(--amber);color:var(--amber)}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .muted{color:var(--muted)}
+  input,select,textarea{
+    background:var(--term);border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:8px;font:14px var(--mono);
+  }
+  textarea{width:100%;min-height:90px;resize:vertical}
+  .kbd{display:inline-block;border:1px solid var(--line);background:#0a130e;color:var(--green-dim);padding:2px 6px;border-radius:4px;font-size:12px}
+  .badge{display:inline-block;border:1px solid var(--line);padding:2px 6px;border-radius:999px;font-size:12px;background:#0a130e;color:var(--muted)}
+  .term{background:var(--term);border:1px solid var(--line);border-radius:8px;padding:10px;min-height:140px;white-space:pre-wrap}
+  .ok{color:var(--green)} .warn{color:var(--amber)} .err{color:var(--red)}
+  .bar{height:6px;background:#122018;border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg, rgba(16,224,138,0.6), rgba(16,224,138,0.9));width:0%}
+  canvas.sk{width:100%;max-width:100%;background:#0b140f;border:1px dashed #1a2a21;border-radius:6px;touch-action:none}
+  .blur{filter:blur(8px)}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:50}
+  .overlay .box{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;max-width:560px;width:95%}
+  .boot{position:fixed;inset:0;background:linear-gradient(#040604,#0b0f0c);display:flex;align-items:center;justify-content:center}
+  .boot .crt{width:90%;max-width:900px;background:#06110b;border:1px solid #0a1f14;border-radius:8px;padding:16px;color:#74f0c8;min-height:260px}
+  .link{color:var(--green);text-decoration:none;border-bottom:1px dotted var(--green)}
+  .top{position:sticky;top:0;background:linear-gradient(180deg, rgba(11,15,12,.98), rgba(11,15,12,.86));padding:8px;border-bottom:1px solid var(--line);z-index:10}
+  .top .big{font-size:20px;color:var(--green)}
+  .right{margin-left:auto}
+  .hl{color:var(--amber)}
+  .divider{border-top:1px dashed #1a2a21;margin:8px 0}
+  .small{font-size:12px}
+  .center{text-align:center}
+  .hidden{display:none}
+</style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-200">
-  <!-- Language -->
-  <div class="fixed right-4 top-4 z-50 flex items-center gap-2">
-    <span class="text-xs text-gray-400">🌐</span>
-    <select id="lang" class="bg-gray-800/70 border border-gray-700 rounded px-2 py-1 text-sm">
-      <option value="bg" selected>Български</option>
-      <option value="en">English</option>
-    </select>
-  </div>
+<body>
 
-  <!-- AOL Break / Breath overlay -->
-  <div id="aolBreak" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
-    <div class="bg-gray-800/90 border border-gray-700 rounded-lg p-6 max-w-sm text-center">
-      <h3 class="text-xl font-medium mb-2" data-i18n="aolTitle">AOL Break</h3>
-      <p class="text-gray-400 text-sm mb-3" data-i18n="aolDesc">Остави анализа. Дишай спокойно и изчисти ума.</p>
-      <div class="w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-gray-600">
-        <span id="aolTimer" class="text-3xl font-light">20</span>
-      </div>
-      <button id="endAol" class="w-full bg-gray-600 hover:bg-gray-500 rounded py-2">OK</button>
+<!-- BOOT -->
+<div id="boot" class="boot">
+  <div class="crt term" id="bootLog"></div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="top row">
+    <div class="big">AIRV ▲ Advanced Intelligence Remote Viewing <span class="badge">CLASSIFIED // TRAINING</span></div>
+    <div class="right row">
+      <span class="small muted">Lang:</span>
+      <select id="langSel">
+        <option value="bg" selected>BG</option>
+        <option value="en">EN</option>
+      </select>
+      <button class="btn" id="focusBtn" title="Toggle Focus (F)">Focus</button>
+      <button class="btn" id="helpBtn" title="Help (?)">?</button>
+      <button class="btn amber" id="settingsBtn" title="Settings">Settings</button>
     </div>
   </div>
 
-  <!-- Top progress/info -->
-  <div id="topbar" class="fixed top-0 left-0 right-0 h-10 bg-gray-900/60 border-b border-gray-800 z-40 hidden">
-    <div class="max-w-6xl mx-auto h-full flex items-center justify-between px-4 text-sm">
-      <div>TRN: <span id="trn" class="font-mono text-emerald-300"></span></div>
-      <div class="flex items-center gap-4">
-        <div data-i18n="stage">Етап:</div><div id="stageName" class="font-medium"></div>
-        <div class="w-40 h-1 bg-gray-700 rounded"><div id="stageBar" class="h-full bg-emerald-500 transition-all" style="width:0%"></div></div>
-        <div id="stageTime" class="tabular-nums text-gray-400 w-14 text-right">00:00</div>
+  <div class="container grid g3">
+    <!-- LEFT NAV / STATUS -->
+    <div class="panel">
+      <h3 class="title">OPS // Status</h3>
+      <div class="row small">
+        <span class="muted">Viewer:</span><input id="viewer" placeholder="RV-001" style="width:120px"/>
+        <span class="muted">Clearance:</span><select id="clearance"><option>Level 3</option><option>Level 2</option><option>Level 1</option></select>
+      </div>
+      <div class="divider"></div>
+      <div class="row small"><span class="muted">TRN:</span><span id="trn" class="kbd">—</span><button class="btn" id="genTRN">Gen</button></div>
+      <div class="row small"><span class="muted">Blind:</span>
+        <select id="blind"><option value="true" selected>ON</option><option value="false">OFF</option></select>
+        <span class="muted">Deck:</span><select id="deckSel"><option value="sample">Sample</option><option value="custom">Custom</option></select>
+        <input type="file" id="deckFile" accept="application/json" class="hidden"/>
+        <button class="btn" id="loadDeck">Load</button>
+      </div>
+      <div class="divider"></div>
+      <div class="row small"><span class="muted">Stage:</span><span id="stageName" class="kbd">—</span><span class="muted">Round:</span><span id="round" class="kbd">0</span></div>
+      <div class="bar" title="Stage Progress"><i id="stageBar"></i></div>
+      <div class="row small"><span class="muted">Time:</span><span id="timer" class="kbd">00:00</span><span class="muted">AOL:</span><span id="aolCount" class="kbd">0</span></div>
+      <div class="divider"></div>
+      <div class="row"><button class="btn" id="newTask">New Task</button><button class="btn" id="loadTask">Load Task</button><button class="btn" id="saveTask">Save Task</button></div>
+      <div class="row"><button class="btn amber" id="exportSessions">Export Sessions</button><button class="btn" id="importSessions">Import</button><input id="importFile" type="file" accept="application/json" class="hidden"/></div>
+      <p class="small muted">Hotkeys: <span class="kbd">F</span> Focus • <span class="kbd">N</span> Next • <span class="kbd">A</span> AOL • <span class="kbd">?</span> Help</p>
+    </div>
+
+    <!-- CENTER: STAGE VIEW -->
+    <div class="panel" id="stagePanel">
+      <h3 class="title" id="stageTitle">Mission Console</h3>
+      <div id="stageBody" class="grid"></div>
+    </div>
+
+    <!-- RIGHT: INTEL LOG -->
+    <div class="panel">
+      <h3 class="title">INTEL // Log</h3>
+      <div id="log" class="term"></div>
+      <div class="divider"></div>
+      <button class="btn red" id="resetSession">Reset Session</button>
+    </div>
+  </div>
+</div>
+
+<!-- AOL BREAK OVERLAY -->
+<div id="aolOverlay" class="overlay">
+  <div class="box">
+    <h3 class="title">AOL BREAK</h3>
+    <p class="muted small" id="aolMsg">Drop analysis. Breathe. Reset mind.</p>
+    <div class="center" style="margin:10px 0">
+      <div class="kbd" id="aolTimer">20</div>
+    </div>
+    <button class="btn" id="endAOL">Resume</button>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="settingsOverlay" class="overlay">
+  <div class="box">
+    <h3 class="title">Settings</h3>
+    <div class="grid g2">
+      <div class="panel">
+        <div class="small muted">Stage durations (seconds)</div>
+        <div class="row small">
+          <label class="muted" style="width:60px">S1</label><input id="tS1" type="number" value="90" style="width:100px"/>
+        </div>
+        <div class="row small">
+          <label class="muted" style="width:60px">S2</label><input id="tS2" type="number" value="180" style="width:100px"/>
+        </div>
+        <div class="row small">
+          <label class="muted" style="width:60px">S3</label><input id="tS3" type="number" value="180" style="width:100px"/>
+        </div>
+        <div class="row small">
+          <label class="muted" style="width:60px">S4</label><input id="tS4" type="number" value="180" style="width:100px"/>
+        </div>
+        <div class="row small">
+          <label class="muted" style="width:60px">S5</label><input id="tS5" type="number" value="150" style="width:100px"/>
+        </div>
+        <div class="row small">
+          <label class="muted" style="width:60px">S6</label><input id="tS6" type="number" value="180" style="width:100px"/>
+        </div>
+        <div class="divider"></div>
+        <label class="row small"><input id="sounds" type="checkbox"/> <span class="muted">Enable sounds</span></label>
+        <label class="row small"><input id="hardMode" type="checkbox"/> <span class="muted">Compliance mode (lock times)</span></label>
+      </div>
+      <div class="panel">
+        <div class="small muted">UI</div>
+        <label class="row small"><input id="bigFonts" type="checkbox" checked/> <span class="muted">Large fonts</span></label>
+        <label class="row small"><input id="showHints" type="checkbox" /> <span class="muted">Show brief hints per stage</span></label>
+        <div class="divider"></div>
+        <button class="btn" id="closeSettings">Close</button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- App -->
-  <main id="app" class="max-w-6xl mx-auto p-4"></main>
+<!-- HELP -->
+<div id="helpOverlay" class="overlay">
+  <div class="box">
+    <h3 class="title">AIRV // Help</h3>
+    <div class="term small">
+[CTRL] Flow:
+S1 Ideogram (I/A/B, gestalt)  →  S2 Sensory  →  S3 Sketch/Move
+→  S4 Matrix (S,D,AI,AOL)  →  S5 Interrogate  →  S6 Model  →  Feedback
 
-  <script>
-    /******************
-     * i18n (BG / EN) *
-     ******************/
-    const I = {
-      bg:{
-        appTitle:"CRV Trainer (S1–S6) + Game Mode",
-        subtitle:"Базирано на DIA/Army CRV (Stargate): S1–S6, TRN, AOL/AOL‑Break, move команди, матрица и самостоятелно оценяване.",
-        startCRV:"Започни CRV сесия",
-        startGame:"Game Mode (бърза интуиция)",
-        loadDeck:"Импорт на целеви „Deck“ (JSON)",
-        or:"или",
-        useSample:"Използвай примерен Deck",
-        privacy:"*Всичко се пази само локално (localStorage).",
-        setupTitle:"Настройка на сесия",
-        chooseDeck:"Целеви Deck",
-        sampleDeck:"Примерен Deck (8 цели)",
-        customDeck:"Потребителски Deck (импортиран)",
-        blindMode:"Blind (скрита цел до Feedback)",
-        genTRN:"Генерирай TRN",
-        beginS1:"Към S1 — Идеограма",
-        stage:"Етап",
-        s1:"S1 — Идеограма",
-        s2:"S2 — Сензорика",
-        s3:"S3 — Скица / Move",
-        s4:"S4 — Матрица",
-        s5:"S5 — Интерогиране",
-        s6:"S6 — Модел/Схеми",
-        feedback:"Feedback",
-        aolTitle:"AOL Break",
-        aolDesc:"Остави анализа. Дишай спокойно и изчисти ума.",
-        // S1
-        s1Brief:"Бърз жест (до 2 сек.) за идеограма; после декодирай I/A/B и гесталт(и).",
-        capture:"Start 2s capture",
-        clearCanvas:"Изчисти платното",
-        ideogram:"Идеограма",
-        compI:"I — следа",
-        compA:"A — усещане/движение",
-        compB:"B — аналитичен етикет",
-        gestalts:"Гесталти",
-        aol:"AOL (аналитичен интерпрет.)",
-        aolBreak:"AOL Break",
-        nextS2:"Към S2",
-        // S2
-        s2Brief:"Списък от чисти сензорни данни (цветове, текстури, температури, звуци, миризми, вкус, „dimensionals“). Без имена!",
-        add:"Добави",
-        tokens:"Токени",
-        nextS3:"Към S3",
-        // S3
-        s3Brief:"По-голяма скица. Ползвай „move“ команди за промяна на перспективата.",
-        sketch:"Скица",
-        move:"Move команда",
-        moveUp:"на 10 м над",
-        moveIn:"вътре в",
-        moveLeft:"10 м вляво",
-        moveRight:"10 м вдясно",
-        moveBack:"10 м назад",
-        moveTime:"напред във времето (+1 час)",
-        doMove:"Изпълни",
-        log:"Лог",
-        nextS4:"Към S4",
-        // S4
-        s4Brief:"Матрица: S(сенс.), D(измерни), AI(естет. импакт), AOL/AOL‑S.",
-        sensory:"S — сензорика",
-        dimensional:"D — размерни/формални",
-        ai:"AI — емоц./естет.",
-        aolS:"AOL/S — анализ от скица",
-        nextS5:"Към S5",
-        // S5
-        s5Brief:"Интерогирай сигнала: функция/цел/контекст. Избягвай имена; маркирай скокове като AOL.",
-        function:"Функция",
-        purpose:"Цел/назначение",
-        context:"Контекст/околна среда",
-        summary:"Кратко резюме (без имена)",
-        nextS6:"Към S6",
-        // S6
-        s6Brief:"Схема/модел (горен/страничен изглед), мащаб, връзки.",
-        topView:"Горен изглед",
-        sideView:"Страничен изглед",
-        scale:"Мащаб/бележки",
-        toFeedback:"Към Feedback",
-        // Feedback
-        reveal:"Покажи целта",
-        target:"Цел",
-        tags:"Тагове",
-        selfScore:"Самооценка (0–7)",
-        autoMatch:"Авто‑съвпадение",
-        save:"Запази сесията",
-        export:"Експорт JSON",
-        newSession:"Нова сесия",
-        // Game
-        gameTitle:"Game Mode — бърза интуиция",
-        startGameBtn:"Старт",
-      },
-      en:{
-        appTitle:"CRV Trainer (S1–S6) + Game Mode",
-        subtitle:"Modeled on DIA/Army CRV (Stargate): S1–S6, TRN, AOL/AOL‑Break, move commands, S4 matrix, self‑scoring.",
-        startCRV:"Start CRV Session",
-        startGame:"Game Mode (quick intuition)",
-        loadDeck:"Import target deck (JSON)",
-        or:"or",
-        useSample:"Use sample deck",
-        privacy:"*All data stays local (localStorage).",
-        setupTitle:"Session setup",
-        chooseDeck:"Target deck",
-        sampleDeck:"Sample deck (8 targets)",
-        customDeck:"Custom deck (imported)",
-        blindMode:"Blind (hide target until feedback)",
-        genTRN:"Generate TRN",
-        beginS1:"Go to S1 — Ideogram",
-        stage:"Stage",
-        s1:"S1 — Ideogram",
-        s2:"S2 — Sensory",
-        s3:"S3 — Sketch / Move",
-        s4:"S4 — Matrix",
-        s5:"S5 — Interrogation",
-        s6:"S6 — Model/Layouts",
-        feedback:"Feedback",
-        aolTitle:"AOL Break",
-        aolDesc:"Drop analysis. Breathe; reset your mind.",
-        // S1
-        s1Brief:"Fast (≤2s) ideogram capture; then decode I/A/B and major gestalt(s).",
-        capture:"Start 2s capture",
-        clearCanvas:"Clear canvas",
-        ideogram:"Ideogram",
-        compI:"I — mark",
-        compA:"A — feel/motion",
-        compB:"B — analytic label",
-        gestalts:"Gestalts",
-        aol:"AOL (analytic overlay)",
-        aolBreak:"AOL Break",
-        nextS2:"Next: S2",
-        // S2
-        s2Brief:"List raw sensory data (colors, textures, temps, sounds, smells, tastes, dimensionals). No naming!",
-        add:"Add",
-        tokens:"Tokens",
-        nextS3:"Next: S3",
-        // S3
-        s3Brief:"Larger sketch. Use move commands to change perspective.",
-        sketch:"Sketch",
-        move:"Move command",
-        moveUp:"10 m above",
-        moveIn:"inside",
-        moveLeft:"10 m left",
-        moveRight:"10 m right",
-        moveBack:"10 m back",
-        moveTime:"+1 hour in time",
-        doMove:"Execute",
-        log:"Log",
-        nextS4:"Next: S4",
-        // S4
-        s4Brief:"Matrix: S (sensory), D (dimensional), AI (aesthetic impact), AOL/AOL‑S.",
-        sensory:"S — sensory",
-        dimensional:"D — dimensional/form",
-        ai:"AI — aesthetic/emotional",
-        aolS:"AOL/S — sketch‑driven analysis",
-        nextS5:"Next: S5",
-        // S5
-        s5Brief:"Interrogate the signal: function/purpose/context. Avoid naming; mark leaps as AOL.",
-        function:"Function",
-        purpose:"Purpose",
-        context:"Context/environment",
-        summary:"Short summary (no names)",
-        nextS6:"Next: S6",
-        // S6
-        s6Brief:"Layouts/model (top/side views), scale, relations.",
-        topView:"Top view",
-        sideView:"Side view",
-        scale:"Scale/notes",
-        toFeedback:"Go to Feedback",
-        // Feedback
-        reveal:"Reveal target",
-        target:"Target",
-        tags:"Tags",
-        selfScore:"Self‑score (0–7)",
-        autoMatch:"Auto‑match",
-        save:"Save session",
-        export:"Export JSON",
-        newSession:"New session",
-        // Game
-        gameTitle:"Game Mode — quick intuition",
-        startGameBtn:"Start",
-      }
+Hotkeys:  N Next  •  A AOL Break  •  F Focus  •  ? Help
+    </div>
+    <button class="btn" id="closeHelp">Close</button>
+  </div>
+</div>
+
+<script>
+/** ===================== Boot ===================== **/
+const bootLines = [
+  "[AIRV BOOT] Initializing classified training kernel...",
+  "[SECURITY] Clearance profiles... OK",
+  "[RV PROTOCOL] Loading CRV stages S1–S6...",
+  "[RV PROTOCOL] AOL / AOL-BREAK handlers... OK",
+  "[TASKING] TRN generator online...",
+  "[STORAGE] Local vault ready...",
+  "[IO] JSON import/export... OK",
+  "[READY] Press ENTER to enter AIRV SYSTEM"
+];
+(function boot(){
+  const log = document.getElementById('bootLog');
+  let i=0; const tick=()=>{ if(i<bootLines.length){ log.textContent += bootLines[i++] + "\\n"; setTimeout(tick, 350);} }
+  tick();
+  window.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter'){ document.getElementById('boot').style.display='none'; document.getElementById('app').classList.remove('hidden'); init(); }
+  });
+})();
+
+/** ===================== State ===================== **/
+const S = {
+  lang:'bg', focus:false, showHints:false, sounds:false, hard:false, bigFonts:true,
+  viewer:'RV-001', clearance:'Level 3',
+  deckType:'sample', deck:[],
+  tasks:[], sessions:[],
+  blind:true, trn:'', round:0, stage:'', stageStart:0, stageDur:0, aolCount:0,
+  // data structures for stages
+  s1:{i:'',a:'',b:'',gestalts:[],aol:[],png:null},
+  s2:{tokens:[]},
+  s3:{moves:[],png:null},
+  s4:{S:'',D:'',AI:'',AOLS:''},
+  s5:{func:'',purpose:'',context:'',summary:''},
+  s6:{top:null,side:null,scale:''},
+  fb:{revealed:false,target:null,self:3,autoPct:0}
+};
+const sampleDeck = [
+  {id:"LGT", label:"Lighthouse on sea cliff", tags:["structure","water","wind","light","rock","tall","cylindrical"]},
+  {id:"BRG", label:"Suspension bridge", tags:["structure","metal","water","span","cables","traffic"]},
+  {id:"VOL", label:"Volcano with plume", tags:["mountain","smoke","heat","ash","cone","energy"]},
+  {id:"CAT", label:"Gothic cathedral interior", tags:["structure","stone","arches","echo","cool","dim","religious"]},
+  {id:"OIL", label:"Offshore oil platform", tags:["structure","metal","water","smell","oil","machinery","noise","wind"]},
+  {id:"WAT", label:"Tall waterfall", tags:["water","spray","sound","cliff","mist","cool","rock"]},
+  {id:"STD", label:"Open-air stadium", tags:["structure","oval","crowd","noise","grass","open","lights"]},
+  {id:"GLC", label:"Glacier valley", tags:["ice","cold","blue","crevasse","slow","mountain","silence"]}
+];
+
+/** ===================== Utils ===================== **/
+const $ = sel=>document.querySelector(sel);
+const log = (msg, cls='') => { const l = document.getElementById('log'); l.innerHTML += (cls?`<span class="${cls}">`:'')+ msg + (cls?'</span>':'') + "\\n"; l.scrollTop = l.scrollHeight; }
+const pad = n => String(n).padStart(2,'0');
+const now = () => Math.floor(Date.now()/1000);
+const genTRN = ()=> String(Math.floor(10000000+Math.random()*90000000));
+function startStage(key, seconds){
+  S.stage = key; S.stageStart = now(); S.stageDur = seconds||0;
+  updateTop();
+  if(S.stageDur>0) requestAnimationFrame(tick);
+  renderStage();
+}
+function tick(){
+  const used = Math.min(now()-S.stageStart, S.stageDur);
+  const pct = Math.round( (used/S.stageDur)*100 ); $('#stageBar').style.width = pct+'%';
+  const left = Math.max(0, S.stageDur - used);
+  $('#timer').textContent = `${pad(Math.floor(left/60))}:${pad(left%60)}`;
+  if(left>0 && S.stageDur>0) requestAnimationFrame(tick);
+}
+function clearStageData(){
+  S.s1={i:'',a:'',b:'',gestalts:[],aol:[],png:null};
+  S.s2={tokens:[]};
+  S.s3={moves:[],png:null};
+  S.s4={S:'',D:'',AI:'',AOLS:''};
+  S.s5={func:'',purpose:'',context:'',summary:''};
+  S.s6={top:null,side:null,scale:''};
+  S.fb={revealed:false,target:null,self:3,autoPct:0};
+}
+function autoMatch(tokens, tags){
+  const T = new Set(tokens.map(x=>x.toLowerCase()));
+  const G = new Set((tags||[]).map(x=>x.toLowerCase()));
+  let hit=0; G.forEach(g=>{ if(T.has(g)) hit++; });
+  return Math.round( (hit / Math.max(G.size,1)) * 100 );
+}
+function saveSession(){
+  const rec = {
+    ts:new Date().toISOString(), viewer:S.viewer, trn:S.trn, blind:S.blind,
+    s1:S.s1, s2:S.s2, s3:S.s3, s4:S.s4, s5:S.s5, s6:S.s6, fb:S.fb
+  };
+  S.sessions.push(rec); localStorage.setItem('airv_sessions', JSON.stringify(S.sessions));
+  return rec;
+}
+
+/** ===================== Canvas ===================== **/
+function attachSketchCanvas(id, onSave){
+  const cvs = document.getElementById(id); const ctx = cvs.getContext('2d');
+  let drawing=false, last=null; ctx.lineWidth=2; ctx.strokeStyle='#8ef6c5'; ctx.lineCap='round';
+  const get = e=>{ const r=cvs.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left, y:t.clientY-r.top};}
+  const draw = p=>{ if(!last){ last=p; return; } ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p; }
+  const down = e=>{ drawing=true; last=null; draw(get(e)); }
+  const move = e=>{ if(drawing) draw(get(e));}
+  const up   = ()=>{ drawing=false; onSave && onSave(cvs.toDataURL('image/png')); }
+  cvs.addEventListener('mousedown',down); cvs.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
+  cvs.addEventListener('touchstart',down,{passive:false}); cvs.addEventListener('touchmove',e=>{e.preventDefault();move(e)},{passive:false}); cvs.addEventListener('touchend',up);
+  return { clear(){ ctx.clearRect(0,0,cvs.width,cvs.height); onSave && onSave(null); } };
+}
+
+/** ===================== Stage Renderers ===================== **/
+function renderStage(){
+  const body = document.getElementById('stageBody');
+  const tl = k=>({bg:{ // minimal i18n (основни подсказки)
+    s1:"S1 — Идеограма: 2s жест, после I/A/B и гесталти. Ако се появи „име“, натисни AOL Break.",
+    s2:"S2 — Сензорика: изброявай цветове, текстури, температура, звуци, миризми, вкусове, „размерни“.",
+    s3:"S3 — Скица & Move: по-голяма скица; move: ↑, вътре, ←, →, назад, +време.",
+    s4:"S4 — Матрица: S (сензорика), D (размерни), AI (емоц. импакт), AOL/AOL‑S (анализ).",
+    s5:"S5 — Интерогиране: функция/цел/контекст; резюме без „имена“.",
+    s6:"S6 — Модел: горен/страничен изглед, мащаб, връзки.",
+    fb:"Feedback: reveal, auto‑match %, self‑score (0–7), export."
+  }, en:{
+    s1:"S1 — Ideogram: 2s capture, then I/A/B and gestalts. If a 'name' appears → AOL Break.",
+    s2:"S2 — Sensory: list colors, textures, temps, sounds, smells, tastes, dimensionals.",
+    s3:"S3 — Sketch & Move: larger sketch; move: up, inside, left, right, back, time +1h.",
+    s4:"S4 — Matrix: S (sensory), D (dimensional), AI (aesthetic), AOL/AOL‑S (analysis).",
+    s5:"S5 — Interrogate: function/purpose/context; short summary (no naming).",
+    s6:"S6 — Model: top/side views, scale, relations.",
+    fb:"Feedback: reveal, auto‑match %, self‑score (0–7), export."
+  }})[S.lang][k];
+  const hint = S.showHints ? (key)=>`<p class="small muted">${tl(key)}</p>` : (_)=>'';
+
+  if(S.stage==='s1'){
+    document.getElementById('stageTitle').textContent = "S1 // Ideogram";
+    body.innerHTML = `
+      ${hint('s1')}
+      <div class="grid g2">
+        <div>
+          <div class="row"><button class="btn" id="cap2s">2s capture</button><button class="btn" id="clr1">Clear</button></div>
+          <canvas id="c1" class="sk" width="900" height="240"></canvas>
+        </div>
+        <div>
+          <div class="row">
+            <div><div class="small muted">I</div><input id="s1i" placeholder="curve/angle/loop"/></div>
+            <div><div class="small muted">A</div><input id="s1a" placeholder="push/pull/fast/slow"/></div>
+            <div><div class="small muted">B</div><input id="s1b" placeholder="land/water/structure…"/></div>
+          </div>
+          <div class="divider"></div>
+          <div class="small muted">Gestalts</div>
+          <div id="gests" class="row small"></div>
+          <div class="divider"></div>
+          <div class="row"><input id="s1aol" placeholder="AOL note…" style="flex:1"/><button class="btn" id="addAOL">Add AOL</button><button class="btn red" id="aolBreak">AOL Break</button></div>
+          <ul id="aolList" class="small"></ul>
+          <div class="divider"></div>
+          <button class="btn amber" id="next">Next (S2)</button>
+        </div>
+      </div>`;
+    const gest = ["land","water","structure","biological","energy","motion"];
+    const gWrap = document.getElementById('gests');
+    gWrap.innerHTML = gest.map(g=>`<label><input type="checkbox" value="${g}"/> <span class="badge">${g}</span></label>`).join(' ');
+    [...gWrap.querySelectorAll('input')].forEach(ch=> ch.onchange = ()=> {
+      if(ch.checked) S.s1.gestalts.push(ch.value); else S.s1.gestalts = S.s1.gestalts.filter(x=>x!==ch.value);
+    });
+    const c = attachSketchCanvas('c1', png=>S.s1.png=png);
+    document.getElementById('clr1').onclick = ()=> c.clear();
+    const canvas = document.getElementById('c1');
+    let timer=null;
+    document.getElementById('cap2s').onclick = ()=>{
+      canvas.style.pointerEvents='auto'; canvas.classList.remove('blur');
+      if(timer) clearTimeout(timer);
+      timer = setTimeout(()=>{ canvas.style.pointerEvents='none'; canvas.classList.add('blur'); }, 2000);
     };
-
-    /***************
-     * Sample deck *
-     ***************/
-    const SAMPLE_DECK = [
-      {id:"LGT-HOUSE", label:"Lighthouse on sea cliff", tags:["structure","water","wind","light","rock","tall","cylindrical"]},
-      {id:"SUS-BRIDG", label:"Suspension bridge over big river", tags:["structure","metal","water","span","traffic","cables","wind"]},
-      {id:"VOL-CONE",  label:"Volcanic cone with plume", tags:["mountain","smoke","heat","ash","rock","cone","danger","energy"]},
-      {id:"CATHE-DRL", label:"Gothic cathedral interior", tags:["structure","stone","arches","echo","cool","dim","religious"]},
-      {id:"OIL-PLTFM", label:"Offshore oil platform", tags:["structure","metal","water","smell","oil","machinery","noise","wind"]},
-      {id:"WATER-FALL",label:"Tall waterfall in forest canyon", tags:["water","spray","sound","cliff","mist","cool","rock","green"]},
-      {id:"STADI-UM",  label:"Open-air sports stadium", tags:["structure","oval","crowd","noise","grass","open","lights"]},
-      {id:"GLAC-IER",  label:"Glacier valley", tags:["ice","cold","blue","crevasse","slow","mountain","silence"]}
+    canvas.style.pointerEvents='none'; canvas.classList.add('blur');
+    document.getElementById('s1i').oninput=e=>S.s1.i=e.target.value;
+    document.getElementById('s1a').oninput=e=>S.s1.a=e.target.value;
+    document.getElementById('s1b').oninput=e=>S.s1.b=e.target.value;
+    const aolList = document.getElementById('aolList');
+    const renderAOL = ()=> aolList.innerHTML = S.s1.aol.map(x=>`<li>${x}</li>`).join('');
+    renderAOL();
+    document.getElementById('addAOL').onclick = ()=>{ const v=document.getElementById('s1aol').value.trim(); if(v){ S.s1.aol.push(v); S.aolCount++; renderAOL(); $('#s1aol').value=''; updateTop(); log("[AOL] "+v, "warn"); } }
+    document.getElementById('aolBreak').onclick = aolBreak;
+    document.getElementById('next').onclick = ()=> startStage('s2', getDur('S2'));
+  }
+  else if(S.stage==='s2'){
+    document.getElementById('stageTitle').textContent = "S2 // Sensory";
+    body.innerHTML = `
+      ${hint('s2')}
+      <div class="grid g2">
+        <div>
+          <div class="small muted">Tokens</div>
+          <div id="tokWrap" class="row"></div>
+          <div class="row"><input id="tok" placeholder="blue / cold / rough …" style="flex:1"/><button class="btn" id="addTok">Add</button></div>
+        </div>
+        <div>
+          <div class="small muted">Tips</div>
+          <div class="term small">colors, textures, temps, sounds, smells, tastes, dimensionals</div>
+          <button class="btn amber" id="next">Next (S3)</button>
+        </div>
+      </div>`;
+    const draw = ()=> $('#tokWrap').innerHTML = S.s2.tokens.map(x=>`<span class="badge">${x}</span>`).join(' ');
+    draw();
+    $('#addTok').onclick = ()=>{ const v=$('#tok').value.trim(); if(v){ S.s2.tokens.push(v); $('#tok').value=''; draw(); } };
+    $('#next').onclick = ()=> startStage('s3', getDur('S3'));
+  }
+  else if(S.stage==='s3'){
+    document.getElementById('stageTitle').textContent = "S3 // Sketch & Move";
+    body.innerHTML = `
+      ${hint('s3')}
+      <div class="grid g2">
+        <div>
+          <div class="row"><button class="btn" id="clr3">Clear</button></div>
+          <canvas id="c3" class="sk" width="1000" height="380"></canvas>
+        </div>
+        <div>
+          <div class="small muted">Move</div>
+          <div class="row">
+            <select id="mv">
+              <option>10 m above</option><option>inside</option><option>10 m left</option>
+              <option>10 m right</option><option>10 m back</option><option>+1 hour</option>
+            </select>
+            <button class="btn" id="doMove">Execute</button>
+          </div>
+          <div class="divider"></div>
+          <div class="small muted">Log</div>
+          <div id="mvlog" class="term small"></div>
+          <button class="btn amber" id="next">Next (S4)</button>
+        </div>
+      </div>`;
+    const c = attachSketchCanvas('c3', png=>S.s3.png=png);
+    $('#clr3').onclick = ()=> c.clear();
+    const rlog = ()=> $('#mvlog').textContent = S.s3.moves.map(x=>`• ${x}`).join("\\n");
+    $('#doMove').onclick = ()=>{ const v=$('#mv').value; S.s3.moves.push(v); rlog(); log("[MOVE] "+v,"muted"); };
+    rlog();
+    $('#next').onclick = ()=> startStage('s4', getDur('S4'));
+  }
+  else if(S.stage==='s4'){
+    document.getElementById('stageTitle').textContent = "S4 // Matrix";
+    body.innerHTML = `
+      ${hint('s4')}
+      <div class="grid g2">
+        <div>
+          <div class="small muted">S — sensory</div><textarea id="s4s">${S.s4.S||''}</textarea>
+          <div class="small muted">D — dimensional</div><textarea id="s4d">${S.s4.D||''}</textarea>
+        </div>
+        <div>
+          <div class="small muted">AI — aesthetic impact</div><textarea id="s4ai">${S.s4.AI||''}</textarea>
+          <div class="small muted">AOL / AOL‑S</div><textarea id="s4a">${S.s4.AOLS||''}</textarea>
+          <div class="row"><button class="btn red" id="aolBreak">AOL Break</button><button class="btn amber" id="next">Next (S5)</button></div>
+        </div>
+      </div>`;
+    $('#s4s').oninput=e=>S.s4.S=e.target.value;
+    $('#s4d').oninput=e=>S.s4.D=e.target.value;
+    $('#s4ai').oninput=e=>S.s4.AI=e.target.value;
+    $('#s4a').oninput=e=>S.s4.AOLS=e.target.value;
+    $('#aolBreak').onclick=aolBreak;
+    $('#next').onclick = ()=> startStage('s5', getDur('S5'));
+  }
+  else if(S.stage==='s5'){
+    document.getElementById('stageTitle').textContent = "S5 // Interrogation";
+    body.innerHTML = `
+      ${hint('s5')}
+      <div class="grid g2">
+        <div>
+          <div class="small muted">Function</div><textarea id="s5f">${S.s5.func||''}</textarea>
+          <div class="small muted">Purpose</div><textarea id="s5p">${S.s5.purpose||''}</textarea>
+        </div>
+        <div>
+          <div class="small muted">Context</div><textarea id="s5c">${S.s5.context||''}</textarea>
+          <div class="small muted">Summary (no names)</div><textarea id="s5s">${S.s5.summary||''}</textarea>
+          <div class="row"><button class="btn red" id="aolBreak">AOL Break</button><button class="btn amber" id="next">Next (S6)</button></div>
+        </div>
+      </div>`;
+    $('#s5f').oninput=e=>S.s5.func=e.target.value;
+    $('#s5p').oninput=e=>S.s5.purpose=e.target.value;
+    $('#s5c').oninput=e=>S.s5.context=e.target.value;
+    $('#s5s').oninput=e=>S.s5.summary=e.target.value;
+    $('#aolBreak').onclick=aolBreak;
+    $('#next').onclick = ()=> startStage('s6', getDur('S6'));
+  }
+  else if(S.stage==='s6'){
+    document.getElementById('stageTitle').textContent = "S6 // Model";
+    body.innerHTML = `
+      ${hint('s6')}
+      <div class="grid g2">
+        <div>
+          <div class="row"><button class="btn" id="clrTop">Clear</button></div>
+          <canvas id="top" class="sk" width="900" height="260"></canvas>
+        </div>
+        <div>
+          <div class="row"><button class="btn" id="clrSide">Clear</button></div>
+          <canvas id="side" class="sk" width="900" height="260"></canvas>
+          <div class="small muted">Scale / notes</div><textarea id="scaleN">${S.s6.scale||''}</textarea>
+          <div class="row"><button class="btn amber" id="toFB">Feedback</button></div>
+        </div>
+      </div>`;
+    const t = attachSketchCanvas('top', png=>S.s6.top=png);
+    const s = attachSketchCanvas('side',png=>S.s6.side=png);
+    $('#clrTop').onclick=()=>t.clear(); $('#clrSide').onclick=()=>s.clear();
+    $('#scaleN').oninput=e=>S.s6.scale=e.target.value;
+    $('#toFB').onclick = ()=> startStage('fb', 0);
+  }
+  else if(S.stage==='fb'){
+    document.getElementById('stageTitle').textContent = "INTEL // Feedback";
+    if(!S.fb.target){
+      const pool = S.deck.length? S.deck : sampleDeck;
+      S.fb.target = pool[Math.floor(Math.random()*pool.length)];
+    }
+    const tokensAll = [
+      ...S.s2.tokens,
+      ...(S.s4.S||'').split(/[,\s]+/).filter(Boolean),
+      ...(S.s4.D||'').split(/[,\s]+/).filter(Boolean),
+      ...(S.s4.AI||'').split(/[,\s]+/).filter(Boolean)
     ];
-
-    /***************
-     * App state   *
-     ***************/
-    const S = {
-      lang:'bg',
-      mode:'crv',                  // 'crv' | 'game'
-      deck: {type:'sample', data:SAMPLE_DECK},
-      blind:true,
-      trn:'',
-      stage:'setup',               // setup,s1,s2,s3,s4,s5,s6,feedback
-      stageStart:0,
-      stageDur:0,                  // seconds used (for bar)
-      // S1
-      s1:{i:'', a:'', b:'', gestalts:[], aol:[], ideogramPNG:null},
-      // S2
-      s2:{tokens:[]},
-      // S3
-      s3:{moves:[], sketchPNG:null},
-      // S4
-      s4:{S:'',D:'',AI:'',AOLS:''},
-      // S5
-      s5:{func:'',purpose:'',context:'',summary:''},
-      // S6
-      s6:{topPNG:null, sidePNG:null, scale:''},
-      // feedback
-      fb:{revealed:false, target:null, selfScore:3, autoScore:0}
+    S.fb.autoPct = autoMatch(tokensAll, S.fb.target.tags||[]);
+    body.innerHTML = `
+      ${hint('fb')}
+      <div class="grid g2">
+        <div>
+          <button class="btn" id="reveal">Reveal</button>
+          <div id="tgt" class="${S.blind && !S.fb.revealed ? 'blur':''}" style="margin-top:8px">
+            <div class="small muted">Target</div>
+            <div>${S.fb.target.label}</div>
+            <div class="small muted">Tags</div>
+            <div>${(S.fb.target.tags||[]).map(x=>`<span class="badge">${x}</span>`).join(' ')}</div>
+          </div>
+        </div>
+        <div>
+          <div class="small muted">Self‑score (0–7)</div>
+          <input id="self" type="range" min="0" max="7" step="1" value="${S.fb.self}"/>
+          <div class="small">Auto‑match: <span class="ok">${S.fb.autoPct}%</span></div>
+          <div class="divider"></div>
+          <div class="row">
+            <button class="btn amber" id="export">Export JSON</button>
+            <button class="btn" id="newSession">New Session</button>
+          </div>
+        </div>
+      </div>`;
+    $('#reveal').onclick=()=>{ S.fb.revealed=true; renderStage(); };
+    $('#self').oninput=e=>S.fb.self=Number(e.target.value);
+    $('#export').onclick=()=>{
+      const rec = saveSession();
+      const blob = new Blob([JSON.stringify(rec,null,2)],{type:'application/json'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`airv-${S.trn}.json`; a.click();
+      log("[EXPORT] session saved","ok");
     };
+    $('#newSession').onclick = ()=>{
+      S.round++; S.trn = genTRN(); clearStageData(); updateTop();
+      startStage('s1', getDur('S1'));
+    };
+  }
+}
+function getDur(k){
+  const v = {S1:+$('#tS1').value, S2:+$('#tS2').value, S3:+$('#tS3').value, S4:+$('#tS4').value, S5:+$('#tS5').value, S6:+$('#tS6').value}[k];
+  return S.hard ? v : 0; // ако не е hard, не заключваме време
+}
+function updateTop(){
+  $('#viewer').value = S.viewer;
+  $('#trn').textContent = S.trn || '—';
+  $('#stageName').textContent = S.stage || '—';
+  $('#round').textContent = String(S.round);
+  $('#aolCount').textContent = String(S.aolCount);
+}
 
-    const $ = s => document.querySelector(s);
-    const app = $('#app');
-    const topbar = $('#topbar'), stageName = $('#stageName'), stageBar = $('#stageBar'), stageTime = $('#stageTime');
+/** ===================== AOL Break ===================== **/
+function aolBreak(){
+  S.aolCount++; updateTop();
+  const ov = $('#aolOverlay'); ov.style.display='flex';
+  let t=20; const tm = $('#aolTimer'); tm.textContent=t;
+  const iv=setInterval(()=>{ t--; tm.textContent=t; if(t<=0){ clearInterval(iv);} },1000);
+  $('#endAOL').onclick = ()=>{ clearInterval(iv); ov.style.display='none'; log("[AOL BREAK] reset","warn"); };
+}
 
-    // Language
-    const langSel = $('#lang');
-    langSel.onchange = () => { S.lang = langSel.value; render(); };
-    const t = (k)=> (I[S.lang][k]||k);
-    function applyI18n() { document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n)); }
+/** ===================== Init & Events ===================== **/
+function init(){
+  // load local
+  S.sessions = JSON.parse(localStorage.getItem('airv_sessions')||'[]');
+  S.tasks = JSON.parse(localStorage.getItem('airv_tasks')||'[]');
+  S.deck = []; S.deckType='sample';
+  S.trn = genTRN(); S.round=1;
+  updateTop(); renderStageWelcome();
 
-    /******** Utilities ********/
-    const pad = n => String(n).padStart(2,'0');
-    const nowSec = ()=> Math.floor(Date.now()/1000);
-    const genTRN = ()=> String(Math.floor(10000000+Math.random()*90000000)); // 8 digits
-    function startStage(key, seconds=0){
-      S.stage = key; S.stageStart = nowSec(); S.stageDur = seconds; renderTop();
-      if(seconds>0){ tick(); }
-    }
-    function tick(){
-      if(S.stageDur<=0) return;
-      const used = Math.min(nowSec()-S.stageStart, S.stageDur);
-      const pct = Math.round( (used/S.stageDur)*100 );
-      stageBar.style.width = pct+'%';
-      const remain = S.stageDur - used;
-      stageTime.textContent = `${pad(Math.floor(remain/60))}:${pad(remain%60)}`;
-      if(remain>0) requestAnimationFrame(tick); else stageTime.textContent = "00:00";
-    }
-    function renderTop(){
-      if(['s1','s2','s3','s4','s5','s6','feedback'].includes(S.stage)){
-        topbar.classList.remove('hidden');
-        $('#trn').textContent = S.trn || '—';
-        stageName.textContent = t(S.stage);
-      }else topbar.classList.add('hidden');
-    }
-    function saveSession(){
-      const rec = {ts:new Date().toISOString(), trn:S.trn, blind:S.blind, deck:S.deck.type,
-        s1:S.s1, s2:S.s2, s3:S.s3, s4:S.s4, s5:S.s5, s6:S.s6, fb:S.fb};
-      const all = JSON.parse(localStorage.getItem('crv_sessions')||'[]');
-      all.push(rec); localStorage.setItem('crv_sessions', JSON.stringify(all));
-      return rec;
-    }
-    function exportJSON(obj, name='session.json'){
-      const blob = new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download=name; a.click();
-    }
+  // controls
+  $('#genTRN').onclick=()=>{ S.trn=genTRN(); updateTop(); log("[TRN] "+S.trn,"ok"); };
+  $('#deckSel').onchange=e=> S.deckType=e.target.value;
+  $('#loadDeck').onclick=()=>{ if(S.deckType==='custom') $('#deckFile').click(); else { S.deck=sampleDeck; log("[DECK] sample loaded","muted"); } };
+  $('#deckFile').onchange=(e)=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ S.deck=JSON.parse(r.result); log("[DECK] custom loaded","ok"); }catch(_){ log("[DECK] invalid JSON","err"); } }; r.readAsText(f); };
 
-    /******** Canvas helpers ********/
-    function sketchCanvas(id, saveCB){
-      const cvs = document.getElementById(id), ctx = cvs.getContext('2d');
-      let drawing=false, last=null;
-      const stroke = (pt)=>{
-        if(!last){ last = pt; return; }
-        ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth=2; ctx.lineCap='round';
-        ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(pt.x, pt.y); ctx.stroke(); last=pt;
-      };
-      const pos = e=>{
-        const r=cvs.getBoundingClientRect();
-        const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
-        const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
-        return {x,y};
-      };
-      const down = e=>{ drawing=true; last=null; stroke(pos(e)); };
-      const move = e=>{ if(drawing) stroke(pos(e)); };
-      const up   = ()=>{ drawing=false; saveCB && saveCB(cvs.toDataURL('image/png')); };
-      cvs.addEventListener('mousedown',down); cvs.addEventListener('touchstart',down,{passive:false});
-      cvs.addEventListener('mousemove',move); cvs.addEventListener('touchmove',e=>{e.preventDefault();move(e);},{passive:false});
-      ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>cvs.addEventListener(ev, up));
-      return {clear(){ ctx.clearRect(0,0,cvs.width,cvs.height); saveCB && saveCB(null); }};
-    }
+  $('#viewer').oninput=e=>S.viewer=e.target.value;
+  $('#blind').onchange=e=>S.blind = (e.target.value==='true');
+  $('#focusBtn').onclick=()=>{ S.focus=!S.focus; document.body.style.fontSize = S.focus? '16px':'14px'; log(S.focus?"[FOCUS] on":"[FOCUS] off","muted"); };
+  $('#helpBtn').onclick=()=> $('#helpOverlay').style.display='flex';
+  $('#closeHelp').onclick=()=> $('#helpOverlay').style.display='none';
+  $('#settingsBtn').onclick=()=> $('#settingsOverlay').style.display='flex';
+  $('#closeSettings').onclick=()=> { $('#settingsOverlay').style.display='none'; applySettings(); }
+  $('#bigFonts').onchange=e=>{ document.body.style.fontSize = e.target.checked? '16px':'14px'; }
+  $('#showHints').onchange=e=> S.showHints = e.target.checked;
+  $('#sounds').onchange=e=> S.sounds = e.target.checked;
+  $('#hardMode').onchange=e=> S.hard = e.target.checked;
 
-    /******** AOL Break ********/
-    function doAOLBreak(){
-      const box = $('#aolBreak'); const timer = $('#aolTimer'); box.classList.remove('hidden');
-      let s=20; timer.textContent=s;
-      const iv = setInterval(()=>{ s--; timer.textContent=s; if(s<=0){ clearInterval(iv); } },1000);
-      $('#endAol').onclick = ()=>{ clearInterval(iv); box.classList.add('hidden'); };
-    }
+  $('#newTask').onclick=makeTask;
+  $('#loadTask').onclick=loadTask;
+  $('#saveTask').onclick=saveTask;
+  $('#exportSessions').onclick=()=>{ const blob=new Blob([JSON.stringify(S.sessions,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='airv-sessions.json'; a.click(); }
+  $('#importSessions').onclick=()=>$('#importFile').click();
+  $('#importFile').onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ try{ const arr=JSON.parse(r.result); if(Array.isArray(arr)){ S.sessions=arr; localStorage.setItem('airv_sessions',JSON.stringify(S.sessions)); log("[IMPORT] sessions loaded","ok"); } }catch(_){ log("[IMPORT] invalid JSON","err"); } }; r.readAsText(f); };
+  $('#resetSession').onclick=()=>{ clearStageData(); S.round=1; S.trn=genTRN(); S.aolCount=0; updateTop(); renderStageWelcome(); log("[RESET] session cleared","warn"); }
 
-    /******** Auto match (simple Tag match) ********/
-    function autoMatchScore(tokens, tags){
-      if(!tags || !tags.length) return 0;
-      const T = new Set(tokens.map(x=>x.toLowerCase()));
-      const G = new Set(tags.map(x=>x.toLowerCase()));
-      let hit=0; G.forEach(g=>{ if(T.has(g)) hit++; });
-      return Math.round((hit/Math.max(G.size,1))*100);
-    }
+  // hotkeys
+  window.addEventListener('keydown',(e)=>{
+    if(e.key==='?'){ $('#helpOverlay').style.display='flex'; }
+    if(e.key==='f' || e.key==='F'){ $('#focusBtn').click(); }
+    if(e.key==='n' || e.key==='N'){ if(S.stage) nextStage(); }
+    if(e.key==='a' || e.key==='A'){ aolBreak(); }
+  });
 
-    /******** Views ********/
-    function viewHome(){
-      app.innerHTML = `
-        <header class="text-center mb-8">
-          <h1 class="text-4xl font-light mb-2">${t('appTitle')}</h1>
-          <p class="text-gray-400">${t('subtitle')}</p>
-        </header>
+  applySettings();
+}
+function applySettings(){
+  document.body.style.fontSize = $('#bigFonts').checked? '16px':'14px';
+  S.showHints = $('#showHints').checked;
+  S.sounds = $('#sounds').checked;
+  S.hard = $('#hardMode').checked;
+}
+function renderStageWelcome(){
+  $('#stageTitle').textContent="Mission Console";
+  $('#stageBody').innerHTML = `
+    <div class="term">
+[AIRV] This console follows CRV stages S1–S6 (DIA/Army manuals). Use TRN; run blind; declare AOL; proceed by stages.
+→ Press <N> or click "Begin S1" to start.
 
-        <section class="grid md:grid-cols-2 gap-6">
-          <div class="bg-gray-800/40 border border-gray-700 rounded-lg p-6">
-            <h2 class="text-2xl font-medium mb-1">CRV</h2>
-            <p class="text-gray-400 mb-4">S1–S6, TRN, AOL, матрица, Feedback.</p>
-            <div class="flex items-center gap-3 mb-3">
-              <input id="deckFile" type="file" accept="application/json" class="hidden"/>
-              <button id="btnImport" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('loadDeck')}</button>
-              <span class="text-gray-500">${t('or')}</span>
-              <button id="btnSample" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('useSample')}</button>
-            </div>
-            <p class="text-xs text-gray-500 mb-4">${t('privacy')}</p>
-            <button id="btnCRV" class="w-full bg-emerald-700 hover:bg-emerald-600 rounded py-3">${t('startCRV')}</button>
-          </div>
+References: CRV Stages I–VI, AOL/AOL‑Break, S4 Matrix (DIA 1985–1986).  (see docs)
+    </div>
+    <div class="row"><button class="btn amber" id="begin">Begin S1</button></div>`;
+  $('#begin').onclick=()=> startStage('s1', getDur('S1'));
+}
+function nextStage(){
+  const order = ['s1','s2','s3','s4','s5','s6','fb'];
+  const i = order.indexOf(S.stage);
+  if(i>=0 && i<order.length-1) startStage(order[i+1], getDur(order[i+1].toUpperCase()));
+}
 
-          <div class="bg-gray-800/40 border border-gray-700 rounded-lg p-6">
-            <h2 class="text-2xl font-medium mb-1">Game</h2>
-            <p class="text-gray-400 mb-4">${t('gameTitle')}</p>
-            <button id="btnGame" class="w-full bg-indigo-700 hover:bg-indigo-600 rounded py-3">${t('startGameBtn')}</button>
-          </div>
-        </section>
-      `;
-      $('#btnImport').onclick = ()=> $('#deckFile').click();
-      $('#deckFile').onchange = (e)=>{
-        const f = e.target.files[0]; if(!f) return;
-        const r = new FileReader();
-        r.onload = ()=>{ try{ S.deck={type:'custom', data:JSON.parse(r.result)}; alert('Deck loaded'); }catch(err){ alert('Invalid JSON'); } };
-        r.readAsText(f);
-      };
-      $('#btnSample').onclick = ()=>{ S.deck={type:'sample', data:SAMPLE_DECK}; alert('Sample deck ready'); };
-      $('#btnCRV').onclick = ()=>{ S.mode='crv'; S.stage='setup'; render(); };
-      $('#btnGame').onclick = ()=>{ S.mode='game'; renderGame(); };
-    }
+/** ===================== Tasking (по задание) ===================== **/
+function makeTask(){
+  const cue = prompt("Enter short task cue (optional, keep viewer blind):","");
+  const tags = prompt("Enter tags (comma separated), e.g. structure,water,wind:","");
+  const t = { trn: genTRN(), cue: cue||"", tags: tags? tags.split(',').map(s=>s.trim()).filter(Boolean):[] };
+  S.tasks.push(t); localStorage.setItem('airv_tasks', JSON.stringify(S.tasks));
+  S.trn = t.trn; updateTop();
+  log("[TASK] created TRN "+t.trn,"ok");
+}
+function loadTask(){
+  if(!S.tasks.length){ alert("No tasks in vault. Create one."); return;}
+  const list = S.tasks.map((t,i)=> `${i+1}. ${t.trn} (${(t.tags||[]).join('/')})`).join("\\n");
+  const n = prompt("Select task:\\n"+list, "1"); const idx = (Number(n)||1)-1;
+  const t = S.tasks[idx]; if(!t) return;
+  S.trn = t.trn; S.fb.target = {label: t.cue || "Tasked Target", tags: t.tags||[]}; // целта за feedback
+  updateTop(); log("[TASK] loaded TRN "+t.trn,"ok");
+}
+function saveTask(){
+  if(!S.fb.target){ alert("No current target context to save."); return; }
+  const t = { trn:S.trn, cue:S.fb.target.label, tags:S.fb.target.tags||[] };
+  S.tasks.push(t); localStorage.setItem('airv_tasks', JSON.stringify(S.tasks));
+  log("[TASK] saved to vault","ok");
+}
 
-    function viewSetup(){
-      app.innerHTML = `
-        <h2 class="text-2xl mb-4">${t('setupTitle')}</h2>
-        <div class="grid md:grid-cols-2 gap-6">
-          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-            <label class="block text-sm text-gray-400 mb-1">${t('chooseDeck')}</label>
-            <div class="text-sm">
-              <p>• ${t('sampleDeck')}: ${S.deck.type==='sample'?'✓':' '}</p>
-              <p>• ${t('customDeck')}: ${S.deck.type==='custom'?'✓':' '}</p>
-            </div>
-            <label class="inline-flex items-center gap-2 mt-3">
-              <input type="checkbox" id="blind" ${S.blind?'checked':''} class="accent-emerald-600"/>
-              <span>${t('blindMode')}</span>
-            </label>
-            <div class="mt-4">
-              <button id="btnTRN" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('genTRN')}</button>
-              <span class="ml-3 font-mono text-emerald-300">${S.trn||''}</span>
-            </div>
-          </div>
-          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-            <p class="text-gray-400 mb-3">TRN остава единственият cue; целта е скрита до Feedback.</p>
-            <button id="btnBegin" class="w-full bg-emerald-700 hover:bg-emerald-600 rounded py-3">${t('beginS1')}</button>
-          </div>
-        </div>
-      `;
-      $('#blind').onchange = (e)=>{ S.blind = e.target.checked; };
-      $('#btnTRN').onclick = ()=>{ S.trn = genTRN(); render(); };
-      $('#btnBegin').onclick = ()=> startStage('s1', 0 /* не ограничавам твърдо време тук */);
-    }
-
-    function viewS1(){
-      renderTop();
-      app.innerHTML = `
-        <div class="grid lg:grid-cols-2 gap-6">
-          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-            <h3 class="text-xl mb-1">S1 — ${t('ideogram')}</h3>
-            <p class="text-gray-400 text-sm mb-3">${t('s1Brief')}</p>
-            <div class="flex items-center gap-2 mb-2">
-              <button id="cap" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('capture')}</button>
-              <button id="clr1" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('clearCanvas')}</button>
-            </div>
-            <canvas id="c1" class="sketch w-full" width="800" height="260"></canvas>
-          </div>
-          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-            <div class="grid md:grid-cols-3 gap-3">
-              <div>
-                <label class="block text-sm text-gray-400 mb-1">${t('compI')}</label>
-                <input id="s1i" class="w-full bg-gray-900/50 border border-gray-700 rounded px-2 py-1"/>
-              </div>
-              <div>
-                <label class="block text-sm text-gray-400 mb-1">${t('compA')}</label>
-                <input id="s1a" class="w-full bg-gray-900/50 border border-gray-700 rounded px-2 py-1"/>
-              </div>
-              <div>
-                <label class="block text-sm text-gray-400 mb-1">${t('compB')}</label>
-                <input id="s1b" class="w-full bg-gray-900/50 border border-gray-700 rounded px-2 py-1"/>
-              </div>
-            </div>
-            <div class="mt-3">
-              <label class="block text-sm text-gray-400 mb-1">${t('gestalts')}</label>
-              <div id="gests" class="flex flex-wrap gap-2"></div>
-            </div>
-            <div class="mt-3">
-              <label class="block text-sm text-gray-400 mb-1">${t('aol')}</label>
-              <div class="flex gap-2">
-                <input id="s1aol" class="flex-1 bg-gray-900/50 border border-gray-700 rounded px-2 py-1"/>
-                <button id="addAOL" class="bg-gray-700 hover:bg-gray-600 rounded px-3">+</button>
-                <button id="btnAOLBreak" class="bg-red-800/70 hover:bg-red-700 rounded px-3">${t('aolBreak')}</button>
-              </div>
-              <ul id="aolList" class="mt-2 text-sm text-gray-300 list-disc ml-5"></ul>
-            </div>
-            <div class="mt-4">
-              <button id="toS2" class="w-full bg-emerald-700 hover:bg-emerald-600 rounded py-2">${t('nextS2')}</button>
-            </div>
-          </div>
-        </div>
-      `;
-      // Gestalts
-      const gestalts = ["land","water","structure","biological","energy","motion"];
-      $('#gests').innerHTML = gestalts.map(g=>`<label class="inline-flex items-center gap-1 bg-gray-900/40 border border-gray-700 rounded px-2 py-1">
-        <input type="checkbox" value="${g}" ${S.s1.gestalts.includes(g)?'checked':''} class="accent-emerald-500"/><span>${g}</span></label>`).join('');
-      $('#gests').querySelectorAll('input').forEach(ch=> ch.onchange = ()=>{
-        if(ch.checked) S.s1.gestalts.push(ch.value);
-        else S.s1.gestalts = S.s1.gestalts.filter(x=>x!==ch.value);
-      });
-      // Ideogram canvas
-      const c1clear = sketchCanvas('c1', (png)=> S.s1.ideogramPNG = png);
-      $('#clr1').onclick = ()=> c1clear.clear();
-      // 2-second capture lock
-      const c1 = $('#c1');
-      let captureTimer=null;
-      $('#cap').onclick = ()=>{
-        c1.style.pointerEvents='auto'; c1.classList.remove('opacity-40');
-        if(captureTimer) clearTimeout(captureTimer);
-        captureTimer = setTimeout(()=>{ c1.style.pointerEvents='none'; c1.classList.add('opacity-40'); }, 2000);
-      };
-      c1.style.pointerEvents='none'; c1.classList.add('opacity-40');
-
-      // I/A/B + AOL
-      $('#s1i').value = S.s1.i; $('#s1a').value = S.s1.a; $('#s1b').value=S.s1.b;
-      $('#s1i').oninput = e=>S.s1.i=e.target.value;
-      $('#s1a').oninput = e=>S.s1.a=e.target.value;
-      $('#s1b').oninput = e=>S.s1.b=e.target.value;
-      const aolList = $('#aolList'); const renderAOL = ()=> aolList.innerHTML = S.s1.aol.map((x,i)=>`<li>${x}</li>`).join('');
-      renderAOL();
-      $('#addAOL').onclick = ()=>{ const v=$('#s1aol').value.trim(); if(v){ S.s1.aol.push(v); $('#s1aol').value=''; renderAOL(); } };
-      $('#btnAOLBreak').onclick = doAOLBreak;
-      $('#toS2').onclick = ()=> startStage('s2', 120); // 2 мин ориентир
-    }
-
-    function viewS2(){
-      renderTop();
-      app.innerHTML = `
-        <div class="bg-gray-800/40 border border-gray-700 rounded p-4 mb-4">
-          <h3 class="text-xl mb-1">S2 — ${t('s2')}</h3>
-          <p class="text-gray-400 text-sm">${t('s2Brief')}</p>
-        </div>
-        <div class="grid md:grid-cols-3 gap-6">
-          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-            <div class="text-sm text-gray-400 mb-2">${t('tokens')}</div>
-            <div id="tokWrap" class="flex flex-wrap gap-2 mb-3"></div>
-            <div class="flex gap-2">
-              <input id="tok" class="flex-1 bg-gray-900/50 border border-gray-700 rounded px-2 py-1" placeholder="e.g., cold / blue / rough ..."/>
-              <button id="addTok" class="bg-gray-700 hover:bg-gray-600 rounded px-3">${t('add')}</button>
-            </div>
-          </div>
-          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-            <div class="text-sm text-gray-400 mb-2">Hints</div>
-            <div class="text-xs text-gray-400 space-y-1">
-              <p>colors: red/blue/green/white/…</p>
-              <p>textures: smooth/rough/gritty/…</p>
-              <p>temps: warm/cold/cool/hot</p>
-              <p>sounds: echo/roar/hum/splash</p>
-              <p>smells & tastes: oil/salt/metallic</p>
-              <p>dimensionals: tall/wide/angular/massive</p>
-            </div>
-          </div>
-          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-            <button id="toS3" class="w-full bg-emerald-700 hover:bg-emerald-600 rounded py-2 mt-6">${t('nextS3')}</button>
-          </div>
-        </div>
-      `;
-      const tokWrap = $('#tokWrap'); const draw = ()=> tokWrap.innerHTML = S.s2.tokens.map((x,i)=>`<span class="bg-gray-900/40 border border-gray-700 rounded px-2 py-1">${x}</span>`).join('');
-      draw();
-      $('#addTok').onclick = ()=>{ const v=$('#tok').value.trim(); if(v){ S.s2.tokens.push(v); $('#tok').value=''; draw(); }};
-      $('#toS3').onclick = ()=> startStage('s3', 180);
-    }
-
-    function viewS3(){
-      renderTop();
-      app.innerHTML = `
-        <div class="grid lg:grid-cols-3 gap-6">
-          <div class="lg:col-span-2 bg-gray-800/40 border border-gray-700 rounded p-4">
-            <h3 class="text-xl mb-1">S3 — ${t('sketch')}</h3>
-            <p class="text-gray-400 text-sm mb-2">${t('s3Brief')}</p>
-            <div class="flex items-center gap-2 mb-2">
-              <button id="clr3" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1">${t('clearCanvas')}</button>
-            </div>
-            <canvas id="c3" class="sketch w-full" width="1000" height="420"></canvas>
-          </div>
-          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-            <div class="text-sm text-gray-400 mb-1">${t('move')}</div>
-            <div class="flex gap-2 mb-2">
-              <select id="mv" class="flex-1 bg-gray-900/50 border border-gray-700 rounded px-2 py-1">
-                <option>${t('moveUp')}</option>
-                <option>${t('moveIn')}</option>
-                <option>${t('moveLeft')}</option>
-                <option>${t('moveRight')}</option>
-                <option>${t('moveBack')}</option>
-                <option>${t('moveTime')}</option>
-              </select>
-              <button id="doMove" class="bg-gray-700 hover:bg-gray-600 rounded px-3">${t('doMove')}</button>
-            </div>
-            <div class="text-sm text-gray-400 mb-1">${t('log')}</div>
-            <ul id="mvlog" class="text-sm list-disc ml-5"></ul>
-            <button id="toS4" class="w-full mt-4 bg-emerald-700 hover:bg-emerald-600 rounded py-2">${t('nextS4')}</button>
-          </div>
-        </div>
-      `;
-      const c3c = sketchCanvas('c3', (png)=> S.s3.sketchPNG = png);
-      $('#clr3').onclick=()=> c3c.clear();
-      const mvlog = $('#mvlog'); const rlog=()=> mvlog.innerHTML=S.s3.moves.map(x=>`<li>${x}</li>`).join('');
-      rlog();
-      $('#doMove').onclick = ()=>{ const v=$('#mv').value; S.s3.moves.push(v); rlog(); };
-      $('#toS4').onclick = ()=> startStage('s4', 180);
-    }
-
-    function viewS4(){
-      renderTop();
-      app.innerHTML = `
-        <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-          <h3 class="text-xl mb-1">S4 — ${t('s4')}</h3>
-          <p class="text-gray-400 text-sm mb-4">${t('s4Brief')}</p>
-          <div class="grid md:grid-cols-4 gap-3">
-            <div><div class="text-sm text-gray-400 mb-1">${t('sensory')}</div><textarea id="s4s" class="w-full h-40 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s4.S||''}</textarea></div>
-            <div><div class="text-sm text-gray-400 mb-1">${t('dimensional')}</div><textarea id="s4d" class="w-full h-40 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s4.D||''}</textarea></div>
-            <div><div class="text-sm text-gray-400 mb-1">${t('ai')}</div><textarea id="s4ai" class="w-full h-40 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s4.AI||''}</textarea></div>
-            <div><div class="text-sm text-gray-400 mb-1">AOL / ${t('aolS')}</div><textarea id="s4a" class="w-full h-40 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s4.AOLS||''}</textarea>
-              <button id="brAOL" class="mt-2 w-full bg-red-800/70 hover:bg-red-700 rounded py-1">${t('aolBreak')}</button>
-            </div>
-          </div>
-          <button id="toS5" class="w-full mt-4 bg-emerald-700 hover:bg-emerald-600 rounded py-2">${t('nextS5')}</button>
-        </div>
-      `;
-      $('#s4s').oninput=e=>S.s4.S=e.target.value;
-      $('#s4d').oninput=e=>S.s4.D=e.target.value;
-      $('#s4ai').oninput=e=>S.s4.AI=e.target.value;
-      $('#s4a').oninput=e=>S.s4.AOLS=e.target.value;
-      $('#brAOL').onclick = doAOLBreak;
-      $('#toS5').onclick = ()=> startStage('s5', 120);
-    }
-
-    function viewS5(){
-      renderTop();
-      app.innerHTML = `
-        <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-          <h3 class="text-xl mb-1">S5 — ${t('s5')}</h3>
-          <p class="text-gray-400 text-sm mb-4">${t('s5Brief')}</p>
-          <div class="grid md:grid-cols-3 gap-3">
-            <div><div class="text-sm text-gray-400 mb-1">${t('function')}</div><textarea id="s5f" class="w-full h-32 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s5.func||''}</textarea></div>
-            <div><div class="text-sm text-gray-400 mb-1">${t('purpose')}</div><textarea id="s5p" class="w-full h-32 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s5.purpose||''}</textarea></div>
-            <div><div class="text-sm text-gray-400 mb-1">${t('context')}</div><textarea id="s5c" class="w-full h-32 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s5.context||''}</textarea></div>
-          </div>
-          <div class="mt-3"><div class="text-sm text-gray-400 mb-1">${t('summary')}</div>
-            <textarea id="s5s" class="w-full h-24 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s5.summary||''}</textarea>
-          </div>
-          <div class="mt-4 flex gap-2">
-            <button id="markAOL" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">Mark last as AOL</button>
-            <button id="toS6" class="flex-1 bg-emerald-700 hover:bg-emerald-600 rounded py-2">${t('nextS6')}</button>
-          </div>
-        </div>
-      `;
-      $('#s5f').oninput=e=>S.s5.func=e.target.value;
-      $('#s5p').oninput=e=>S.s5.purpose=e.target.value;
-      $('#s5c').oninput=e=>S.s5.context=e.target.value;
-      $('#s5s').oninput=e=>S.s5.summary=e.target.value;
-      $('#markAOL').onclick = ()=> doAOLBreak();
-      $('#toS6').onclick = ()=> startStage('s6', 180);
-    }
-
-    function viewS6(){
-      renderTop();
-      app.innerHTML = `
-        <div class="grid lg:grid-cols-3 gap-6">
-          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-            <h3 class="text-xl mb-1">${t('topView')}</h3>
-            <div class="flex items-center gap-2 mb-2">
-              <button id="clrTop" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1">${t('clearCanvas')}</button>
-            </div>
-            <canvas id="top" class="sketch w-full" width="800" height="300"></canvas>
-          </div>
-          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-            <h3 class="text-xl mb-1">${t('sideView')}</h3>
-            <div class="flex items-center gap-2 mb-2">
-              <button id="clrSide" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1">${t('clearCanvas')}</button>
-            </div>
-            <canvas id="side" class="sketch w-full" width="800" height="300"></canvas>
-          </div>
-          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-            <div class="text-sm text-gray-400 mb-1">${t('scale')}</div>
-            <textarea id="scaleN" class="w-full h-40 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s6.scale||''}</textarea>
-            <button id="toFB" class="w-full mt-4 bg-indigo-700 hover:bg-indigo-600 rounded py-2">${t('toFeedback')}</button>
-          </div>
-        </div>
-      `;
-      const topC = sketchCanvas('top', (png)=> S.s6.topPNG=png);
-      const sideC = sketchCanvas('side',(png)=> S.s6.sidePNG=png);
-      $('#clrTop').onclick = ()=> topC.clear();
-      $('#clrSide').onclick = ()=> sideC.clear();
-      $('#scaleN').oninput = e=> S.s6.scale = e.target.value;
-      $('#toFB').onclick = ()=> startStage('feedback', 0);
-    }
-
-    function viewFeedback(){
-      renderTop();
-      // pick a target
-      if(!S.fb.target){
-        const pool = S.deck.data;
-        S.fb.target = pool[Math.floor(Math.random()*pool.length)];
-      }
-      const tokensAll = [
-        ...S.s2.tokens,
-        ...(S.s4.S||'').split(/[,\s]+/).filter(Boolean),
-        ...(S.s4.D||'').split(/[,\s]+/).filter(Boolean),
-        ...(S.s4.AI||'').split(/[,\s]+/).filter(Boolean)
-      ];
-      const auto = autoMatchScore(tokensAll, S.fb.target.tags||[]);
-      S.fb.autoScore = auto;
-
-      app.innerHTML = `
-        <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-          <h3 class="text-xl mb-1">${t('feedback')}</h3>
-          <div class="grid md:grid-cols-2 gap-4">
-            <div>
-              <button id="reveal" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('reveal')}</button>
-              <div id="tBlock" class="mt-3 ${S.blind && !S.fb.revealed?'blur-sm select-none':''}">
-                <div class="text-sm text-gray-400">${t('target')}</div>
-                <div class="text-lg">${S.fb.target.label}</div>
-                <div class="text-sm text-gray-400 mt-2">${t('tags')}</div>
-                <div class="flex flex-wrap gap-2 mt-1">
-                  ${(S.fb.target.tags||[]).map(x=>`<span class="bg-gray-900/40 border border-gray-700 rounded px-2 py-1 text-sm">${x}</span>`).join('')}
-                </div>
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm text-gray-400 mb-1">${t('selfScore')} (0–7)</label>
-              <input id="selfScore" type="range" min="0" max="7" step="1" value="${S.fb.selfScore}" class="w-full"/>
-              <div class="text-sm text-gray-400">Auto: ${t('autoMatch')} — <span class="text-emerald-400 font-medium">${auto}%</span></div>
-              <div class="mt-3 flex gap-2">
-                <button id="save" class="bg-emerald-700 hover:bg-emerald-600 rounded px-3 py-2">${t('save')}</button>
-                <button id="export" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('export')}</button>
-                <button id="new" class="flex-1 bg-indigo-700 hover:bg-indigo-600 rounded px-3 py-2">${t('newSession')}</button>
-              </div>
-              <p class="text-xs text-gray-500 mt-2">* Скалата 0–7 е типична за субективното съдийство в RV експерименти (SRI). [3](https://documents2.theblackvault.com/documents/cia/CIA-RDP96-00787R000500400001-4.pdf)</p>
-            </div>
-          </div>
-        </div>
-      `;
-      $('#reveal').onclick = ()=>{ S.fb.revealed = true; render(); };
-      $('#selfScore').oninput = e=> S.fb.selfScore = Number(e.target.value);
-      $('#save').onclick = ()=>{ const rec = saveSession(); alert('Session saved'); };
-      $('#export').onclick = ()=> exportJSON(saveSession(), `crv-${S.trn}.json`);
-      $('#new').onclick = ()=>{ Object.assign(S, {mode:'crv', deck:S.deck, blind:true, trn:genTRN(), stage:'setup',
-        s1:{i:'',a:'',b:'',gestalts:[],aol:[],ideogramPNG:null},
-        s2:{tokens:[]}, s3:{moves:[],sketchPNG:null}, s4:{S:'',D:'',AI:'',AOLS:''},
-        s5:{func:'',purpose:'',context:'',summary:''}, s6:{topPNG:null,sidePNG:null,scale:''}, fb:{revealed:false,target:null,selfScore:3,autoScore:0}
-      }); render(); };
-    }
-
-    /******** Game Mode (simple, from previous idea) ********/
-    function renderGame(){
-      app.innerHTML = `
-        <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
-          <h3 class="text-xl mb-1">${t('gameTitle')}</h3>
-          <p class="text-gray-400 mb-3">Лек вариант за бърз дрилинг (без CRV етапи).</p>
-          <button class="bg-gray-700 rounded px-3 py-2" onclick="location.reload()">${t('startGameBtn')}</button>
-        </div>`;
-    }
-
-    function render(){
-      applyI18n();
-      if(S.stage==='setup'){ viewSetup(); }
-      else if(S.stage==='s1'){ viewS1(); }
-      else if(S.stage==='s2'){ viewS2(); }
-      else if(S.stage==='s3'){ viewS3(); }
-      else if(S.stage==='s4'){ viewS4(); }
-      else if(S.stage==='s5'){ viewS5(); }
-      else if(S.stage==='s6'){ viewS6(); }
-      else if(S.stage==='feedback'){ viewFeedback(); }
-      else { viewHome(); }
-    }
-
-    // Init
-    render();
-  </script>
+</script>
 </body>
 </html>
