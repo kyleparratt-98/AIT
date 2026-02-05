@@ -1,148 +1,761 @@
 <!doctype html>
 <html lang="bg">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Advanced Intuition Training (HTML)</title>
-  <!-- Tailwind по CDN за да запазим визията близка до оригинала -->
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>CRV Trainer — Advanced Intuition (BG/EN)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Няколко дребни помощни стила */
-    .border-3 { border-width: 3px; }
+    .border-3{border-width:3px}
+    canvas.sketch{touch-action:none; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.15)}
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-200">
-  <!-- Език -->
+  <!-- Language -->
   <div class="fixed right-4 top-4 z-50 flex items-center gap-2">
-    <label for="lang" class="text-xs text-gray-400">🌐</label>
+    <span class="text-xs text-gray-400">🌐</span>
     <select id="lang" class="bg-gray-800/70 border border-gray-700 rounded px-2 py-1 text-sm">
       <option value="bg" selected>Български</option>
       <option value="en">English</option>
     </select>
   </div>
 
-  <!-- Индикатор за дишане -->
-  <div id="breathing" class="hidden fixed left-4 top-16 items-center gap-3 bg-gray-800/60 px-4 py-3 rounded-lg border border-gray-700">
-    <svg id="breathIcon" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h4l2 6 2-6h4"></path><path d="M5 16h14"></path></svg>
-    <div>
-      <p id="breathText" class="text-gray-400 text-xs"></p>
-      <div class="w-16 h-1 bg-gray-700 rounded-full mt-1">
-        <div id="breathBar" class="h-full bg-gray-400" style="width:0%"></div>
+  <!-- AOL Break / Breath overlay -->
+  <div id="aolBreak" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div class="bg-gray-800/90 border border-gray-700 rounded-lg p-6 max-w-sm text-center">
+      <h3 class="text-xl font-medium mb-2" data-i18n="aolTitle">AOL Break</h3>
+      <p class="text-gray-400 text-sm mb-3" data-i18n="aolDesc">Остави анализа. Дишай спокойно и изчисти ума.</p>
+      <div class="w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-gray-600">
+        <span id="aolTimer" class="text-3xl font-light">20</span>
+      </div>
+      <button id="endAol" class="w-full bg-gray-600 hover:bg-gray-500 rounded py-2">OK</button>
+    </div>
+  </div>
+
+  <!-- Top progress/info -->
+  <div id="topbar" class="fixed top-0 left-0 right-0 h-10 bg-gray-900/60 border-b border-gray-800 z-40 hidden">
+    <div class="max-w-6xl mx-auto h-full flex items-center justify-between px-4 text-sm">
+      <div>TRN: <span id="trn" class="font-mono text-emerald-300"></span></div>
+      <div class="flex items-center gap-4">
+        <div data-i18n="stage">Етап:</div><div id="stageName" class="font-medium"></div>
+        <div class="w-40 h-1 bg-gray-700 rounded"><div id="stageBar" class="h-full bg-emerald-500 transition-all" style="width:0%"></div></div>
+        <div id="stageTime" class="tabular-nums text-gray-400 w-14 text-right">00:00</div>
       </div>
     </div>
   </div>
 
-  <!-- Прогрес бар -->
-  <div id="progressBar" class="hidden fixed top-0 left-0 right-0 h-2 bg-gray-900 z-40 flex">
-    <div id="progressRed" class="bg-red-600 transition-all duration-700" style="width:100%"></div>
-    <div id="progressGreen" class="bg-green-600 transition-all duration-700" style="width:0%"></div>
-  </div>
-
-  <!-- Контейнер -->
-  <main id="app" class="flex items-center justify-center p-4"></main>
+  <!-- App -->
+  <main id="app" class="max-w-6xl mx-auto p-4"></main>
 
   <script>
-    /***********************
-     * Многоезичен речник  *
-     ***********************/
-    const i18n = {
-      bg: {
-        appTitle: "Advanced Intuition Training",
-        basedOn: "Базирано на протоколи за Remote Viewing от проекта CIA Stargate",
-        selectTrainingMode: "Избери режим на тренировка",
-        normalMode: "Нормален режим",
-        normalModeDesc: "Стандартна тренировка с прогресивни нива",
-        hyperMode: "Хиперрежим",
-        hyperModeDesc: "Напреднала тренировка — без избор, въвеждаш отговор",
-        chooseFocus: "Избери фокус",
-        selectProfile: "Избери профил на възприятие",
-        levelTitle: "Избери ниво",
-        prepareMind: "Подготви ума",
-        prepareDesc: "Затвори очи. Следвай дъха си. Изчисти мислите. Позволи на интуицията да се пробуди.",
-        breatheIn: "Вдишай",
-        breatheOut: "Издишай",
-        hold: "Задръж",
-        whichOne: "Кое усещаш?",
-        trustFirst: "Довери се на първия импулс...",
-        help: "помощ",
-        clear: "изчисти",
-        typeSense: "Въведи какво усещаш...",
-        submitPerception: "Изпрати възприятие",
-        accuracy: "Точност",
-        hypCaption: "Какво възприемаш?",
-        hypSub: "Довери се само на способностите си за дистанционно виждане...",
-        hypHint: "Въведи отговора по-долу",
-        correct: "Вярно!",
-        notQuite: "Почти",
-        correctPerfect: "Перфектно! Интуицията ти е силна.",
-        correctHint: "Вярно! (Използвана подсказка — половин точка)",
-        wrongMsg: (t) => `Търсеният таргет беше: ${t}. Продължавай да тренираш!`,
-        youChose: (c) => `Твоят избор: ${c}`,
-        copyResults: "📋 Копирай резултатите",
-        continueTraining: "Продължи тренировката",
-        startOver: "Започни отначало",
-        nextTarget: "Следваща задача",
-        back: "← Назад",
-        modeLabel: (mode, levelName, levelNum) =>
-          mode === 'hypermode' ? 'HYPERMODE' : `Ниво ${levelNum}: ${levelName}`,
-        resultsCopied: "Резултатите са копирани!",
-        levelName: {
-          1: "Начинаещ", 2: "Новак", 3: "Ученик", 4: "Студент", 5: "Практик",
-          6: "Умел", 7: "Напреднал", 8: "Експерт", 9: "Майстор", 10: "Грандмайстор"
-        },
-        choicesWord: "избора"
+    /******************
+     * i18n (BG / EN) *
+     ******************/
+    const I = {
+      bg:{
+        appTitle:"CRV Trainer (S1–S6) + Game Mode",
+        subtitle:"Базирано на DIA/Army CRV (Stargate): S1–S6, TRN, AOL/AOL‑Break, move команди, матрица и самостоятелно оценяване.",
+        startCRV:"Започни CRV сесия",
+        startGame:"Game Mode (бърза интуиция)",
+        loadDeck:"Импорт на целеви „Deck“ (JSON)",
+        or:"или",
+        useSample:"Използвай примерен Deck",
+        privacy:"*Всичко се пази само локално (localStorage).",
+        setupTitle:"Настройка на сесия",
+        chooseDeck:"Целеви Deck",
+        sampleDeck:"Примерен Deck (8 цели)",
+        customDeck:"Потребителски Deck (импортиран)",
+        blindMode:"Blind (скрита цел до Feedback)",
+        genTRN:"Генерирай TRN",
+        beginS1:"Към S1 — Идеограма",
+        stage:"Етап",
+        s1:"S1 — Идеограма",
+        s2:"S2 — Сензорика",
+        s3:"S3 — Скица / Move",
+        s4:"S4 — Матрица",
+        s5:"S5 — Интерогиране",
+        s6:"S6 — Модел/Схеми",
+        feedback:"Feedback",
+        aolTitle:"AOL Break",
+        aolDesc:"Остави анализа. Дишай спокойно и изчисти ума.",
+        // S1
+        s1Brief:"Бърз жест (до 2 сек.) за идеограма; после декодирай I/A/B и гесталт(и).",
+        capture:"Start 2s capture",
+        clearCanvas:"Изчисти платното",
+        ideogram:"Идеограма",
+        compI:"I — следа",
+        compA:"A — усещане/движение",
+        compB:"B — аналитичен етикет",
+        gestalts:"Гесталти",
+        aol:"AOL (аналитичен интерпрет.)",
+        aolBreak:"AOL Break",
+        nextS2:"Към S2",
+        // S2
+        s2Brief:"Списък от чисти сензорни данни (цветове, текстури, температури, звуци, миризми, вкус, „dimensionals“). Без имена!",
+        add:"Добави",
+        tokens:"Токени",
+        nextS3:"Към S3",
+        // S3
+        s3Brief:"По-голяма скица. Ползвай „move“ команди за промяна на перспективата.",
+        sketch:"Скица",
+        move:"Move команда",
+        moveUp:"на 10 м над",
+        moveIn:"вътре в",
+        moveLeft:"10 м вляво",
+        moveRight:"10 м вдясно",
+        moveBack:"10 м назад",
+        moveTime:"напред във времето (+1 час)",
+        doMove:"Изпълни",
+        log:"Лог",
+        nextS4:"Към S4",
+        // S4
+        s4Brief:"Матрица: S(сенс.), D(измерни), AI(естет. импакт), AOL/AOL‑S.",
+        sensory:"S — сензорика",
+        dimensional:"D — размерни/формални",
+        ai:"AI — емоц./естет.",
+        aolS:"AOL/S — анализ от скица",
+        nextS5:"Към S5",
+        // S5
+        s5Brief:"Интерогирай сигнала: функция/цел/контекст. Избягвай имена; маркирай скокове като AOL.",
+        function:"Функция",
+        purpose:"Цел/назначение",
+        context:"Контекст/околна среда",
+        summary:"Кратко резюме (без имена)",
+        nextS6:"Към S6",
+        // S6
+        s6Brief:"Схема/модел (горен/страничен изглед), мащаб, връзки.",
+        topView:"Горен изглед",
+        sideView:"Страничен изглед",
+        scale:"Мащаб/бележки",
+        toFeedback:"Към Feedback",
+        // Feedback
+        reveal:"Покажи целта",
+        target:"Цел",
+        tags:"Тагове",
+        selfScore:"Самооценка (0–7)",
+        autoMatch:"Авто‑съвпадение",
+        save:"Запази сесията",
+        export:"Експорт JSON",
+        newSession:"Нова сесия",
+        // Game
+        gameTitle:"Game Mode — бърза интуиция",
+        startGameBtn:"Старт",
       },
-      en: {
-        appTitle: "Advanced Intuition Training",
-        basedOn: "Based on Remote Viewing protocols from the CIA Stargate Project",
-        selectTrainingMode: "Select Your Training Mode",
-        normalMode: "Normal Mode",
-        normalModeDesc: "Standard intuition training with progressive levels",
-        hyperMode: "Hypermode",
-        hyperModeDesc: "Advanced training — no choices, type the answer",
-        chooseFocus: "Choose Your Focus",
-        selectProfile: "Select a perception profile",
-        levelTitle: "Select Your Level",
-        prepareMind: "Prepare Your Mind",
-        prepareDesc: "Close your eyes. Follow your breath. Clear your thoughts. Let your intuition awaken.",
-        breatheIn: "Breathe In",
-        breatheOut: "Breathe Out",
-        hold: "Hold",
-        whichOne: "Which one do you sense?",
-        trustFirst: "Trust your first instinct...",
-        help: "help",
-        clear: "clear",
-        typeSense: "Type what you sense...",
-        submitPerception: "Submit Perception",
-        accuracy: "Accuracy",
-        hypCaption: "What do you perceive?",
-        hypSub: "Trust only your remote viewing abilities...",
-        hypHint: "Type your answer below",
-        correct: "Correct!",
-        notQuite: "Not quite",
-        correctPerfect: "Perfect! Your intuition is strong.",
-        correctHint: "Correct! (Hint used — half points)",
-        wrongMsg: (t) => `The target was: ${t}. Keep practicing!`,
-        youChose: (c) => `You chose: ${c}`,
-        copyResults: "📋 Copy Results",
-        continueTraining: "Continue Training",
-        startOver: "Start Over",
-        nextTarget: "Next Target",
-        back: "← Back",
-        modeLabel: (mode, levelName, levelNum) =>
-          mode === 'hypermode' ? 'HYPERMODE' : `Level ${levelNum}: ${levelName}`,
-        resultsCopied: "Results copied!",
-        levelName: {
-          1: "Beginner", 2: "Novice", 3: "Learner", 4: "Student", 5: "Practitioner",
-          6: "Skilled", 7: "Advanced", 8: "Expert", 9: "Master", 10: "Grandmaster"
-        },
-        choicesWord: "choices"
+      en:{
+        appTitle:"CRV Trainer (S1–S6) + Game Mode",
+        subtitle:"Modeled on DIA/Army CRV (Stargate): S1–S6, TRN, AOL/AOL‑Break, move commands, S4 matrix, self‑scoring.",
+        startCRV:"Start CRV Session",
+        startGame:"Game Mode (quick intuition)",
+        loadDeck:"Import target deck (JSON)",
+        or:"or",
+        useSample:"Use sample deck",
+        privacy:"*All data stays local (localStorage).",
+        setupTitle:"Session setup",
+        chooseDeck:"Target deck",
+        sampleDeck:"Sample deck (8 targets)",
+        customDeck:"Custom deck (imported)",
+        blindMode:"Blind (hide target until feedback)",
+        genTRN:"Generate TRN",
+        beginS1:"Go to S1 — Ideogram",
+        stage:"Stage",
+        s1:"S1 — Ideogram",
+        s2:"S2 — Sensory",
+        s3:"S3 — Sketch / Move",
+        s4:"S4 — Matrix",
+        s5:"S5 — Interrogation",
+        s6:"S6 — Model/Layouts",
+        feedback:"Feedback",
+        aolTitle:"AOL Break",
+        aolDesc:"Drop analysis. Breathe; reset your mind.",
+        // S1
+        s1Brief:"Fast (≤2s) ideogram capture; then decode I/A/B and major gestalt(s).",
+        capture:"Start 2s capture",
+        clearCanvas:"Clear canvas",
+        ideogram:"Ideogram",
+        compI:"I — mark",
+        compA:"A — feel/motion",
+        compB:"B — analytic label",
+        gestalts:"Gestalts",
+        aol:"AOL (analytic overlay)",
+        aolBreak:"AOL Break",
+        nextS2:"Next: S2",
+        // S2
+        s2Brief:"List raw sensory data (colors, textures, temps, sounds, smells, tastes, dimensionals). No naming!",
+        add:"Add",
+        tokens:"Tokens",
+        nextS3:"Next: S3",
+        // S3
+        s3Brief:"Larger sketch. Use move commands to change perspective.",
+        sketch:"Sketch",
+        move:"Move command",
+        moveUp:"10 m above",
+        moveIn:"inside",
+        moveLeft:"10 m left",
+        moveRight:"10 m right",
+        moveBack:"10 m back",
+        moveTime:"+1 hour in time",
+        doMove:"Execute",
+        log:"Log",
+        nextS4:"Next: S4",
+        // S4
+        s4Brief:"Matrix: S (sensory), D (dimensional), AI (aesthetic impact), AOL/AOL‑S.",
+        sensory:"S — sensory",
+        dimensional:"D — dimensional/form",
+        ai:"AI — aesthetic/emotional",
+        aolS:"AOL/S — sketch‑driven analysis",
+        nextS5:"Next: S5",
+        // S5
+        s5Brief:"Interrogate the signal: function/purpose/context. Avoid naming; mark leaps as AOL.",
+        function:"Function",
+        purpose:"Purpose",
+        context:"Context/environment",
+        summary:"Short summary (no names)",
+        nextS6:"Next: S6",
+        // S6
+        s6Brief:"Layouts/model (top/side views), scale, relations.",
+        topView:"Top view",
+        sideView:"Side view",
+        scale:"Scale/notes",
+        toFeedback:"Go to Feedback",
+        // Feedback
+        reveal:"Reveal target",
+        target:"Target",
+        tags:"Tags",
+        selfScore:"Self‑score (0–7)",
+        autoMatch:"Auto‑match",
+        save:"Save session",
+        export:"Export JSON",
+        newSession:"New session",
+        // Game
+        gameTitle:"Game Mode — quick intuition",
+        startGameBtn:"Start",
       }
     };
 
-    /*********************************
-     * Данни, адаптирани от TSX кода *
-     *********************************/
-    const PROFILES = [
-      { id: 'shapes',   name: {bg:'Форми', en:'Shapes & Forms'},     desc: {bg:'Фокус върху геометрични фигури', en:'Focus on geometric patterns'} },
-      { id: 'colors',   name: {bg:'Цветове', en:'Colors & Tones'},    desc: {bg:'Усети цветовите вибрации', en:'Sense color vibrations'} },
+    /***************
+     * Sample deck *
+     ***************/
+    const SAMPLE_DECK = [
+      {id:"LGT-HOUSE", label:"Lighthouse on sea cliff", tags:["structure","water","wind","light","rock","tall","cylindrical"]},
+      {id:"SUS-BRIDG", label:"Suspension bridge over big river", tags:["structure","metal","water","span","traffic","cables","wind"]},
+      {id:"VOL-CONE",  label:"Volcanic cone with plume", tags:["mountain","smoke","heat","ash","rock","cone","danger","energy"]},
+      {id:"CATHE-DRL", label:"Gothic cathedral interior", tags:["structure","stone","arches","echo","cool","dim","religious"]},
+      {id:"OIL-PLTFM", label:"Offshore oil platform", tags:["structure","metal","water","smell","oil","machinery","noise","wind"]},
+      {id:"WATER-FALL",label:"Tall waterfall in forest canyon", tags:["water","spray","sound","cliff","mist","cool","rock","green"]},
+      {id:"STADI-UM",  label:"Open-air sports stadium", tags:["structure","oval","crowd","noise","grass","open","lights"]},
+      {id:"GLAC-IER",  label:"Glacier valley", tags:["ice","cold","blue","crevasse","slow","mountain","silence"]}
+    ];
+
+    /***************
+     * App state   *
+     ***************/
+    const S = {
+      lang:'bg',
+      mode:'crv',                  // 'crv' | 'game'
+      deck: {type:'sample', data:SAMPLE_DECK},
+      blind:true,
+      trn:'',
+      stage:'setup',               // setup,s1,s2,s3,s4,s5,s6,feedback
+      stageStart:0,
+      stageDur:0,                  // seconds used (for bar)
+      // S1
+      s1:{i:'', a:'', b:'', gestalts:[], aol:[], ideogramPNG:null},
+      // S2
+      s2:{tokens:[]},
+      // S3
+      s3:{moves:[], sketchPNG:null},
+      // S4
+      s4:{S:'',D:'',AI:'',AOLS:''},
+      // S5
+      s5:{func:'',purpose:'',context:'',summary:''},
+      // S6
+      s6:{topPNG:null, sidePNG:null, scale:''},
+      // feedback
+      fb:{revealed:false, target:null, selfScore:3, autoScore:0}
+    };
+
+    const $ = s => document.querySelector(s);
+    const app = $('#app');
+    const topbar = $('#topbar'), stageName = $('#stageName'), stageBar = $('#stageBar'), stageTime = $('#stageTime');
+
+    // Language
+    const langSel = $('#lang');
+    langSel.onchange = () => { S.lang = langSel.value; render(); };
+    const t = (k)=> (I[S.lang][k]||k);
+    function applyI18n() { document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n)); }
+
+    /******** Utilities ********/
+    const pad = n => String(n).padStart(2,'0');
+    const nowSec = ()=> Math.floor(Date.now()/1000);
+    const genTRN = ()=> String(Math.floor(10000000+Math.random()*90000000)); // 8 digits
+    function startStage(key, seconds=0){
+      S.stage = key; S.stageStart = nowSec(); S.stageDur = seconds; renderTop();
+      if(seconds>0){ tick(); }
+    }
+    function tick(){
+      if(S.stageDur<=0) return;
+      const used = Math.min(nowSec()-S.stageStart, S.stageDur);
+      const pct = Math.round( (used/S.stageDur)*100 );
+      stageBar.style.width = pct+'%';
+      const remain = S.stageDur - used;
+      stageTime.textContent = `${pad(Math.floor(remain/60))}:${pad(remain%60)}`;
+      if(remain>0) requestAnimationFrame(tick); else stageTime.textContent = "00:00";
+    }
+    function renderTop(){
+      if(['s1','s2','s3','s4','s5','s6','feedback'].includes(S.stage)){
+        topbar.classList.remove('hidden');
+        $('#trn').textContent = S.trn || '—';
+        stageName.textContent = t(S.stage);
+      }else topbar.classList.add('hidden');
+    }
+    function saveSession(){
+      const rec = {ts:new Date().toISOString(), trn:S.trn, blind:S.blind, deck:S.deck.type,
+        s1:S.s1, s2:S.s2, s3:S.s3, s4:S.s4, s5:S.s5, s6:S.s6, fb:S.fb};
+      const all = JSON.parse(localStorage.getItem('crv_sessions')||'[]');
+      all.push(rec); localStorage.setItem('crv_sessions', JSON.stringify(all));
+      return rec;
+    }
+    function exportJSON(obj, name='session.json'){
+      const blob = new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download=name; a.click();
+    }
+
+    /******** Canvas helpers ********/
+    function sketchCanvas(id, saveCB){
+      const cvs = document.getElementById(id), ctx = cvs.getContext('2d');
+      let drawing=false, last=null;
+      const stroke = (pt)=>{
+        if(!last){ last = pt; return; }
+        ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth=2; ctx.lineCap='round';
+        ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(pt.x, pt.y); ctx.stroke(); last=pt;
+      };
+      const pos = e=>{
+        const r=cvs.getBoundingClientRect();
+        const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+        const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+        return {x,y};
+      };
+      const down = e=>{ drawing=true; last=null; stroke(pos(e)); };
+      const move = e=>{ if(drawing) stroke(pos(e)); };
+      const up   = ()=>{ drawing=false; saveCB && saveCB(cvs.toDataURL('image/png')); };
+      cvs.addEventListener('mousedown',down); cvs.addEventListener('touchstart',down,{passive:false});
+      cvs.addEventListener('mousemove',move); cvs.addEventListener('touchmove',e=>{e.preventDefault();move(e);},{passive:false});
+      ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>cvs.addEventListener(ev, up));
+      return {clear(){ ctx.clearRect(0,0,cvs.width,cvs.height); saveCB && saveCB(null); }};
+    }
+
+    /******** AOL Break ********/
+    function doAOLBreak(){
+      const box = $('#aolBreak'); const timer = $('#aolTimer'); box.classList.remove('hidden');
+      let s=20; timer.textContent=s;
+      const iv = setInterval(()=>{ s--; timer.textContent=s; if(s<=0){ clearInterval(iv); } },1000);
+      $('#endAol').onclick = ()=>{ clearInterval(iv); box.classList.add('hidden'); };
+    }
+
+    /******** Auto match (simple Tag match) ********/
+    function autoMatchScore(tokens, tags){
+      if(!tags || !tags.length) return 0;
+      const T = new Set(tokens.map(x=>x.toLowerCase()));
+      const G = new Set(tags.map(x=>x.toLowerCase()));
+      let hit=0; G.forEach(g=>{ if(T.has(g)) hit++; });
+      return Math.round((hit/Math.max(G.size,1))*100);
+    }
+
+    /******** Views ********/
+    function viewHome(){
+      app.innerHTML = `
+        <header class="text-center mb-8">
+          <h1 class="text-4xl font-light mb-2">${t('appTitle')}</h1>
+          <p class="text-gray-400">${t('subtitle')}</p>
+        </header>
+
+        <section class="grid md:grid-cols-2 gap-6">
+          <div class="bg-gray-800/40 border border-gray-700 rounded-lg p-6">
+            <h2 class="text-2xl font-medium mb-1">CRV</h2>
+            <p class="text-gray-400 mb-4">S1–S6, TRN, AOL, матрица, Feedback.</p>
+            <div class="flex items-center gap-3 mb-3">
+              <input id="deckFile" type="file" accept="application/json" class="hidden"/>
+              <button id="btnImport" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('loadDeck')}</button>
+              <span class="text-gray-500">${t('or')}</span>
+              <button id="btnSample" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('useSample')}</button>
+            </div>
+            <p class="text-xs text-gray-500 mb-4">${t('privacy')}</p>
+            <button id="btnCRV" class="w-full bg-emerald-700 hover:bg-emerald-600 rounded py-3">${t('startCRV')}</button>
+          </div>
+
+          <div class="bg-gray-800/40 border border-gray-700 rounded-lg p-6">
+            <h2 class="text-2xl font-medium mb-1">Game</h2>
+            <p class="text-gray-400 mb-4">${t('gameTitle')}</p>
+            <button id="btnGame" class="w-full bg-indigo-700 hover:bg-indigo-600 rounded py-3">${t('startGameBtn')}</button>
+          </div>
+        </section>
+      `;
+      $('#btnImport').onclick = ()=> $('#deckFile').click();
+      $('#deckFile').onchange = (e)=>{
+        const f = e.target.files[0]; if(!f) return;
+        const r = new FileReader();
+        r.onload = ()=>{ try{ S.deck={type:'custom', data:JSON.parse(r.result)}; alert('Deck loaded'); }catch(err){ alert('Invalid JSON'); } };
+        r.readAsText(f);
+      };
+      $('#btnSample').onclick = ()=>{ S.deck={type:'sample', data:SAMPLE_DECK}; alert('Sample deck ready'); };
+      $('#btnCRV').onclick = ()=>{ S.mode='crv'; S.stage='setup'; render(); };
+      $('#btnGame').onclick = ()=>{ S.mode='game'; renderGame(); };
+    }
+
+    function viewSetup(){
+      app.innerHTML = `
+        <h2 class="text-2xl mb-4">${t('setupTitle')}</h2>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+            <label class="block text-sm text-gray-400 mb-1">${t('chooseDeck')}</label>
+            <div class="text-sm">
+              <p>• ${t('sampleDeck')}: ${S.deck.type==='sample'?'✓':' '}</p>
+              <p>• ${t('customDeck')}: ${S.deck.type==='custom'?'✓':' '}</p>
+            </div>
+            <label class="inline-flex items-center gap-2 mt-3">
+              <input type="checkbox" id="blind" ${S.blind?'checked':''} class="accent-emerald-600"/>
+              <span>${t('blindMode')}</span>
+            </label>
+            <div class="mt-4">
+              <button id="btnTRN" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('genTRN')}</button>
+              <span class="ml-3 font-mono text-emerald-300">${S.trn||''}</span>
+            </div>
+          </div>
+          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+            <p class="text-gray-400 mb-3">TRN остава единственият cue; целта е скрита до Feedback.</p>
+            <button id="btnBegin" class="w-full bg-emerald-700 hover:bg-emerald-600 rounded py-3">${t('beginS1')}</button>
+          </div>
+        </div>
+      `;
+      $('#blind').onchange = (e)=>{ S.blind = e.target.checked; };
+      $('#btnTRN').onclick = ()=>{ S.trn = genTRN(); render(); };
+      $('#btnBegin').onclick = ()=> startStage('s1', 0 /* не ограничавам твърдо време тук */);
+    }
+
+    function viewS1(){
+      renderTop();
+      app.innerHTML = `
+        <div class="grid lg:grid-cols-2 gap-6">
+          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+            <h3 class="text-xl mb-1">S1 — ${t('ideogram')}</h3>
+            <p class="text-gray-400 text-sm mb-3">${t('s1Brief')}</p>
+            <div class="flex items-center gap-2 mb-2">
+              <button id="cap" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('capture')}</button>
+              <button id="clr1" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('clearCanvas')}</button>
+            </div>
+            <canvas id="c1" class="sketch w-full" width="800" height="260"></canvas>
+          </div>
+          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+            <div class="grid md:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-sm text-gray-400 mb-1">${t('compI')}</label>
+                <input id="s1i" class="w-full bg-gray-900/50 border border-gray-700 rounded px-2 py-1"/>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-400 mb-1">${t('compA')}</label>
+                <input id="s1a" class="w-full bg-gray-900/50 border border-gray-700 rounded px-2 py-1"/>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-400 mb-1">${t('compB')}</label>
+                <input id="s1b" class="w-full bg-gray-900/50 border border-gray-700 rounded px-2 py-1"/>
+              </div>
+            </div>
+            <div class="mt-3">
+              <label class="block text-sm text-gray-400 mb-1">${t('gestalts')}</label>
+              <div id="gests" class="flex flex-wrap gap-2"></div>
+            </div>
+            <div class="mt-3">
+              <label class="block text-sm text-gray-400 mb-1">${t('aol')}</label>
+              <div class="flex gap-2">
+                <input id="s1aol" class="flex-1 bg-gray-900/50 border border-gray-700 rounded px-2 py-1"/>
+                <button id="addAOL" class="bg-gray-700 hover:bg-gray-600 rounded px-3">+</button>
+                <button id="btnAOLBreak" class="bg-red-800/70 hover:bg-red-700 rounded px-3">${t('aolBreak')}</button>
+              </div>
+              <ul id="aolList" class="mt-2 text-sm text-gray-300 list-disc ml-5"></ul>
+            </div>
+            <div class="mt-4">
+              <button id="toS2" class="w-full bg-emerald-700 hover:bg-emerald-600 rounded py-2">${t('nextS2')}</button>
+            </div>
+          </div>
+        </div>
+      `;
+      // Gestalts
+      const gestalts = ["land","water","structure","biological","energy","motion"];
+      $('#gests').innerHTML = gestalts.map(g=>`<label class="inline-flex items-center gap-1 bg-gray-900/40 border border-gray-700 rounded px-2 py-1">
+        <input type="checkbox" value="${g}" ${S.s1.gestalts.includes(g)?'checked':''} class="accent-emerald-500"/><span>${g}</span></label>`).join('');
+      $('#gests').querySelectorAll('input').forEach(ch=> ch.onchange = ()=>{
+        if(ch.checked) S.s1.gestalts.push(ch.value);
+        else S.s1.gestalts = S.s1.gestalts.filter(x=>x!==ch.value);
+      });
+      // Ideogram canvas
+      const c1clear = sketchCanvas('c1', (png)=> S.s1.ideogramPNG = png);
+      $('#clr1').onclick = ()=> c1clear.clear();
+      // 2-second capture lock
+      const c1 = $('#c1');
+      let captureTimer=null;
+      $('#cap').onclick = ()=>{
+        c1.style.pointerEvents='auto'; c1.classList.remove('opacity-40');
+        if(captureTimer) clearTimeout(captureTimer);
+        captureTimer = setTimeout(()=>{ c1.style.pointerEvents='none'; c1.classList.add('opacity-40'); }, 2000);
+      };
+      c1.style.pointerEvents='none'; c1.classList.add('opacity-40');
+
+      // I/A/B + AOL
+      $('#s1i').value = S.s1.i; $('#s1a').value = S.s1.a; $('#s1b').value=S.s1.b;
+      $('#s1i').oninput = e=>S.s1.i=e.target.value;
+      $('#s1a').oninput = e=>S.s1.a=e.target.value;
+      $('#s1b').oninput = e=>S.s1.b=e.target.value;
+      const aolList = $('#aolList'); const renderAOL = ()=> aolList.innerHTML = S.s1.aol.map((x,i)=>`<li>${x}</li>`).join('');
+      renderAOL();
+      $('#addAOL').onclick = ()=>{ const v=$('#s1aol').value.trim(); if(v){ S.s1.aol.push(v); $('#s1aol').value=''; renderAOL(); } };
+      $('#btnAOLBreak').onclick = doAOLBreak;
+      $('#toS2').onclick = ()=> startStage('s2', 120); // 2 мин ориентир
+    }
+
+    function viewS2(){
+      renderTop();
+      app.innerHTML = `
+        <div class="bg-gray-800/40 border border-gray-700 rounded p-4 mb-4">
+          <h3 class="text-xl mb-1">S2 — ${t('s2')}</h3>
+          <p class="text-gray-400 text-sm">${t('s2Brief')}</p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+            <div class="text-sm text-gray-400 mb-2">${t('tokens')}</div>
+            <div id="tokWrap" class="flex flex-wrap gap-2 mb-3"></div>
+            <div class="flex gap-2">
+              <input id="tok" class="flex-1 bg-gray-900/50 border border-gray-700 rounded px-2 py-1" placeholder="e.g., cold / blue / rough ..."/>
+              <button id="addTok" class="bg-gray-700 hover:bg-gray-600 rounded px-3">${t('add')}</button>
+            </div>
+          </div>
+          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+            <div class="text-sm text-gray-400 mb-2">Hints</div>
+            <div class="text-xs text-gray-400 space-y-1">
+              <p>colors: red/blue/green/white/…</p>
+              <p>textures: smooth/rough/gritty/…</p>
+              <p>temps: warm/cold/cool/hot</p>
+              <p>sounds: echo/roar/hum/splash</p>
+              <p>smells & tastes: oil/salt/metallic</p>
+              <p>dimensionals: tall/wide/angular/massive</p>
+            </div>
+          </div>
+          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+            <button id="toS3" class="w-full bg-emerald-700 hover:bg-emerald-600 rounded py-2 mt-6">${t('nextS3')}</button>
+          </div>
+        </div>
+      `;
+      const tokWrap = $('#tokWrap'); const draw = ()=> tokWrap.innerHTML = S.s2.tokens.map((x,i)=>`<span class="bg-gray-900/40 border border-gray-700 rounded px-2 py-1">${x}</span>`).join('');
+      draw();
+      $('#addTok').onclick = ()=>{ const v=$('#tok').value.trim(); if(v){ S.s2.tokens.push(v); $('#tok').value=''; draw(); }};
+      $('#toS3').onclick = ()=> startStage('s3', 180);
+    }
+
+    function viewS3(){
+      renderTop();
+      app.innerHTML = `
+        <div class="grid lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-gray-800/40 border border-gray-700 rounded p-4">
+            <h3 class="text-xl mb-1">S3 — ${t('sketch')}</h3>
+            <p class="text-gray-400 text-sm mb-2">${t('s3Brief')}</p>
+            <div class="flex items-center gap-2 mb-2">
+              <button id="clr3" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1">${t('clearCanvas')}</button>
+            </div>
+            <canvas id="c3" class="sketch w-full" width="1000" height="420"></canvas>
+          </div>
+          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+            <div class="text-sm text-gray-400 mb-1">${t('move')}</div>
+            <div class="flex gap-2 mb-2">
+              <select id="mv" class="flex-1 bg-gray-900/50 border border-gray-700 rounded px-2 py-1">
+                <option>${t('moveUp')}</option>
+                <option>${t('moveIn')}</option>
+                <option>${t('moveLeft')}</option>
+                <option>${t('moveRight')}</option>
+                <option>${t('moveBack')}</option>
+                <option>${t('moveTime')}</option>
+              </select>
+              <button id="doMove" class="bg-gray-700 hover:bg-gray-600 rounded px-3">${t('doMove')}</button>
+            </div>
+            <div class="text-sm text-gray-400 mb-1">${t('log')}</div>
+            <ul id="mvlog" class="text-sm list-disc ml-5"></ul>
+            <button id="toS4" class="w-full mt-4 bg-emerald-700 hover:bg-emerald-600 rounded py-2">${t('nextS4')}</button>
+          </div>
+        </div>
+      `;
+      const c3c = sketchCanvas('c3', (png)=> S.s3.sketchPNG = png);
+      $('#clr3').onclick=()=> c3c.clear();
+      const mvlog = $('#mvlog'); const rlog=()=> mvlog.innerHTML=S.s3.moves.map(x=>`<li>${x}</li>`).join('');
+      rlog();
+      $('#doMove').onclick = ()=>{ const v=$('#mv').value; S.s3.moves.push(v); rlog(); };
+      $('#toS4').onclick = ()=> startStage('s4', 180);
+    }
+
+    function viewS4(){
+      renderTop();
+      app.innerHTML = `
+        <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+          <h3 class="text-xl mb-1">S4 — ${t('s4')}</h3>
+          <p class="text-gray-400 text-sm mb-4">${t('s4Brief')}</p>
+          <div class="grid md:grid-cols-4 gap-3">
+            <div><div class="text-sm text-gray-400 mb-1">${t('sensory')}</div><textarea id="s4s" class="w-full h-40 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s4.S||''}</textarea></div>
+            <div><div class="text-sm text-gray-400 mb-1">${t('dimensional')}</div><textarea id="s4d" class="w-full h-40 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s4.D||''}</textarea></div>
+            <div><div class="text-sm text-gray-400 mb-1">${t('ai')}</div><textarea id="s4ai" class="w-full h-40 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s4.AI||''}</textarea></div>
+            <div><div class="text-sm text-gray-400 mb-1">AOL / ${t('aolS')}</div><textarea id="s4a" class="w-full h-40 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s4.AOLS||''}</textarea>
+              <button id="brAOL" class="mt-2 w-full bg-red-800/70 hover:bg-red-700 rounded py-1">${t('aolBreak')}</button>
+            </div>
+          </div>
+          <button id="toS5" class="w-full mt-4 bg-emerald-700 hover:bg-emerald-600 rounded py-2">${t('nextS5')}</button>
+        </div>
+      `;
+      $('#s4s').oninput=e=>S.s4.S=e.target.value;
+      $('#s4d').oninput=e=>S.s4.D=e.target.value;
+      $('#s4ai').oninput=e=>S.s4.AI=e.target.value;
+      $('#s4a').oninput=e=>S.s4.AOLS=e.target.value;
+      $('#brAOL').onclick = doAOLBreak;
+      $('#toS5').onclick = ()=> startStage('s5', 120);
+    }
+
+    function viewS5(){
+      renderTop();
+      app.innerHTML = `
+        <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+          <h3 class="text-xl mb-1">S5 — ${t('s5')}</h3>
+          <p class="text-gray-400 text-sm mb-4">${t('s5Brief')}</p>
+          <div class="grid md:grid-cols-3 gap-3">
+            <div><div class="text-sm text-gray-400 mb-1">${t('function')}</div><textarea id="s5f" class="w-full h-32 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s5.func||''}</textarea></div>
+            <div><div class="text-sm text-gray-400 mb-1">${t('purpose')}</div><textarea id="s5p" class="w-full h-32 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s5.purpose||''}</textarea></div>
+            <div><div class="text-sm text-gray-400 mb-1">${t('context')}</div><textarea id="s5c" class="w-full h-32 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s5.context||''}</textarea></div>
+          </div>
+          <div class="mt-3"><div class="text-sm text-gray-400 mb-1">${t('summary')}</div>
+            <textarea id="s5s" class="w-full h-24 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s5.summary||''}</textarea>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <button id="markAOL" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">Mark last as AOL</button>
+            <button id="toS6" class="flex-1 bg-emerald-700 hover:bg-emerald-600 rounded py-2">${t('nextS6')}</button>
+          </div>
+        </div>
+      `;
+      $('#s5f').oninput=e=>S.s5.func=e.target.value;
+      $('#s5p').oninput=e=>S.s5.purpose=e.target.value;
+      $('#s5c').oninput=e=>S.s5.context=e.target.value;
+      $('#s5s').oninput=e=>S.s5.summary=e.target.value;
+      $('#markAOL').onclick = ()=> doAOLBreak();
+      $('#toS6').onclick = ()=> startStage('s6', 180);
+    }
+
+    function viewS6(){
+      renderTop();
+      app.innerHTML = `
+        <div class="grid lg:grid-cols-3 gap-6">
+          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+            <h3 class="text-xl mb-1">${t('topView')}</h3>
+            <div class="flex items-center gap-2 mb-2">
+              <button id="clrTop" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1">${t('clearCanvas')}</button>
+            </div>
+            <canvas id="top" class="sketch w-full" width="800" height="300"></canvas>
+          </div>
+          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+            <h3 class="text-xl mb-1">${t('sideView')}</h3>
+            <div class="flex items-center gap-2 mb-2">
+              <button id="clrSide" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1">${t('clearCanvas')}</button>
+            </div>
+            <canvas id="side" class="sketch w-full" width="800" height="300"></canvas>
+          </div>
+          <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+            <div class="text-sm text-gray-400 mb-1">${t('scale')}</div>
+            <textarea id="scaleN" class="w-full h-40 bg-gray-900/50 border border-gray-700 rounded p-2">${S.s6.scale||''}</textarea>
+            <button id="toFB" class="w-full mt-4 bg-indigo-700 hover:bg-indigo-600 rounded py-2">${t('toFeedback')}</button>
+          </div>
+        </div>
+      `;
+      const topC = sketchCanvas('top', (png)=> S.s6.topPNG=png);
+      const sideC = sketchCanvas('side',(png)=> S.s6.sidePNG=png);
+      $('#clrTop').onclick = ()=> topC.clear();
+      $('#clrSide').onclick = ()=> sideC.clear();
+      $('#scaleN').oninput = e=> S.s6.scale = e.target.value;
+      $('#toFB').onclick = ()=> startStage('feedback', 0);
+    }
+
+    function viewFeedback(){
+      renderTop();
+      // pick a target
+      if(!S.fb.target){
+        const pool = S.deck.data;
+        S.fb.target = pool[Math.floor(Math.random()*pool.length)];
+      }
+      const tokensAll = [
+        ...S.s2.tokens,
+        ...(S.s4.S||'').split(/[,\s]+/).filter(Boolean),
+        ...(S.s4.D||'').split(/[,\s]+/).filter(Boolean),
+        ...(S.s4.AI||'').split(/[,\s]+/).filter(Boolean)
+      ];
+      const auto = autoMatchScore(tokensAll, S.fb.target.tags||[]);
+      S.fb.autoScore = auto;
+
+      app.innerHTML = `
+        <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+          <h3 class="text-xl mb-1">${t('feedback')}</h3>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <button id="reveal" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('reveal')}</button>
+              <div id="tBlock" class="mt-3 ${S.blind && !S.fb.revealed?'blur-sm select-none':''}">
+                <div class="text-sm text-gray-400">${t('target')}</div>
+                <div class="text-lg">${S.fb.target.label}</div>
+                <div class="text-sm text-gray-400 mt-2">${t('tags')}</div>
+                <div class="flex flex-wrap gap-2 mt-1">
+                  ${(S.fb.target.tags||[]).map(x=>`<span class="bg-gray-900/40 border border-gray-700 rounded px-2 py-1 text-sm">${x}</span>`).join('')}
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">${t('selfScore')} (0–7)</label>
+              <input id="selfScore" type="range" min="0" max="7" step="1" value="${S.fb.selfScore}" class="w-full"/>
+              <div class="text-sm text-gray-400">Auto: ${t('autoMatch')} — <span class="text-emerald-400 font-medium">${auto}%</span></div>
+              <div class="mt-3 flex gap-2">
+                <button id="save" class="bg-emerald-700 hover:bg-emerald-600 rounded px-3 py-2">${t('save')}</button>
+                <button id="export" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-2">${t('export')}</button>
+                <button id="new" class="flex-1 bg-indigo-700 hover:bg-indigo-600 rounded px-3 py-2">${t('newSession')}</button>
+              </div>
+              <p class="text-xs text-gray-500 mt-2">* Скалата 0–7 е типична за субективното съдийство в RV експерименти (SRI). [3](https://documents2.theblackvault.com/documents/cia/CIA-RDP96-00787R000500400001-4.pdf)</p>
+            </div>
+          </div>
+        </div>
+      `;
+      $('#reveal').onclick = ()=>{ S.fb.revealed = true; render(); };
+      $('#selfScore').oninput = e=> S.fb.selfScore = Number(e.target.value);
+      $('#save').onclick = ()=>{ const rec = saveSession(); alert('Session saved'); };
+      $('#export').onclick = ()=> exportJSON(saveSession(), `crv-${S.trn}.json`);
+      $('#new').onclick = ()=>{ Object.assign(S, {mode:'crv', deck:S.deck, blind:true, trn:genTRN(), stage:'setup',
+        s1:{i:'',a:'',b:'',gestalts:[],aol:[],ideogramPNG:null},
+        s2:{tokens:[]}, s3:{moves:[],sketchPNG:null}, s4:{S:'',D:'',AI:'',AOLS:''},
+        s5:{func:'',purpose:'',context:'',summary:''}, s6:{topPNG:null,sidePNG:null,scale:''}, fb:{revealed:false,target:null,selfScore:3,autoScore:0}
+      }); render(); };
+    }
+
+    /******** Game Mode (simple, from previous idea) ********/
+    function renderGame(){
+      app.innerHTML = `
+        <div class="bg-gray-800/40 border border-gray-700 rounded p-4">
+          <h3 class="text-xl mb-1">${t('gameTitle')}</h3>
+          <p class="text-gray-400 mb-3">Лек вариант за бърз дрилинг (без CRV етапи).</p>
+          <button class="bg-gray-700 rounded px-3 py-2" onclick="location.reload()">${t('startGameBtn')}</button>
+        </div>`;
+    }
+
+    function render(){
+      applyI18n();
+      if(S.stage==='setup'){ viewSetup(); }
+      else if(S.stage==='s1'){ viewS1(); }
+      else if(S.stage==='s2'){ viewS2(); }
+      else if(S.stage==='s3'){ viewS3(); }
+      else if(S.stage==='s4'){ viewS4(); }
+      else if(S.stage==='s5'){ viewS5(); }
+      else if(S.stage==='s6'){ viewS6(); }
+      else if(S.stage==='feedback'){ viewFeedback(); }
+      else { viewHome(); }
+    }
+
+    // Init
+    render();
+  </script>
+</body>
+</html>
